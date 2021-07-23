@@ -1,0 +1,1 @@
+..\..\..\..\Engine\Binaries\DotNET\UnrealBuildTool.exe -ProjectFiles BlueprintChecker
