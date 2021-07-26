@@ -19,8 +19,5 @@ public class BlueprintCheckerTarget : TargetRules
 		bCompileAgainstApplicationCore = true;
 		bBuildRequiresCookedData = false;
 		bCompileWithStatsWithoutEngine = true;
-
-		
-		// AdditionalLinkerArguments = "/ENTRY:mainCRTStartup";
 	}
 }

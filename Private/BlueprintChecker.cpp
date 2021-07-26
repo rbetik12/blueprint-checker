@@ -1,6 +1,9 @@
+// Here we explicitly say to linker which entry point to use
 #pragma comment(linker, "/SUBSYSTEM:CONSOLE /ENTRY:mainCRTStartup")
 
 #include "BlueprintChecker.h"
+
+#include "FPlatformAgnosticChecker.h"
 #include "RequiredProgramMainCPPInclude.h"
 #include "UObject/CoreRedirects.h"
 #include "Serialization/AsyncLoadingThread.h"
@@ -11,36 +14,20 @@ IMPLEMENT_PRIMARY_GAME_MODULE(FDefaultModuleImpl, BlueprintChecker, BlueprintChe
 
 FEngineLoop GEngineLoop;
 bool GIsConsoleExecutable = true;
-__declspec( dllimport ) void InitUObject();
 
-void InitializeEngine()
+// Entry point is here
+int main(int Argc, char* Argv[])
 {
-	// Initialization
-	FCommandLine::Set(TEXT(""));
-	FPlatformProcess::SetCurrentWorkingDirectoryToBaseDir();
-	FConfigCacheIni::InitializeConfigSystem();
-	// InitUObject();
-	FCoreRedirects::Initialize();
-	// FLinkerLoad::CreateActiveRedirectsMap(TEXT(""));
-	FTaskGraphInterface::Startup(FPlatformMisc::NumberOfCores());
-	FTaskGraphInterface::Get().AttachToThread(ENamedThreads::GameThread);
-	FThreadStats::StartThread();
+	if (Argc < 2)
+	{
+		std::cerr << "Not enough arguments!" << std::endl;
+		exit(EXIT_FAILURE);
+	}
 
-	GEventDrivenLoaderEnabled = false;
-	GWarn = FPlatformApplicationMisc::GetFeedbackContext();
-	//TODO Find where UE4 gets asset file size
-	// FMaxPackageSummarySize::Value = 100000;
-}
-
-// !!!Entry point is HERE!!!
-int main()
-{
-	// InitializeEngine();
-	GEngineLoop.PreInit(TEXT(""));
-	UE_LOG(LogBlueprintChecker, Display, TEXT("Initialized engine!"))
-	// FEngineLoop::AppPreExit();
-	UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, TEXT("/Engine/MyAssets/NewBlueprint"));
+	const size_t ArgStrLen = strlen(Argv[1]);
+	const FString& BlueprintPathStr = FString(ArgStrLen, Argv[1]);
 	
+	FPlatformAgnosticChecker::Check(*BlueprintPathStr);
 	return 0;
 }
 

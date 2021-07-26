@@ -3,6 +3,7 @@ using UnrealBuildTool;
 public class BlueprintChecker : ModuleRules {
 	public BlueprintChecker(ReadOnlyTargetRules Target) : base(Target) {
 		PrivateDefinitions.AddRange(new string[] {
+			// "CUSTOM_ENGINE_INITIALIZATION=1"
 		});
 
 		PrivateIncludePaths.AddRange(new string[] {
@@ -42,9 +43,6 @@ public class BlueprintChecker : ModuleRules {
 		
 		PrivateIncludePathModuleNames.AddRange(new string[] {
 			
-		});
-		
-		PublicIncludePaths.AddRange(new string[] {
 		});
 	}
 }
