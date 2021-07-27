@@ -10,8 +10,15 @@ void FPlatformAgnosticChecker::Check(const TCHAR* BlueprintPath)
 	FEngineWorker::Init();
 	if (CopyFileToContentDir(BlueprintPath))
 	{
-		// TODO Blueprint parsing
+		ConstructBlueprintInternalPath(BlueprintPath);
+		ParseBlueprint();
 	}
+	Exit();
+}
+
+void FPlatformAgnosticChecker::Exit()
+{
+	//TODO Delete temporary files and directories we created earlier
 	FEngineWorker::Exit();
 }
 
@@ -32,4 +39,18 @@ bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 	std::wcout << "Successfully copied file from " << BlueprintPath << " to " << *DestFilePath << std::endl;
 	return true;
 }
+
+void FPlatformAgnosticChecker::ParseBlueprint()
+{
+	Blueprint = LoadObject<UBlueprint>(nullptr, *BlueprintInternalPath);
+}
+
+void FPlatformAgnosticChecker::ConstructBlueprintInternalPath(const TCHAR* BlueprintPath)
+{
+	const FString _BlueprintInternalPath = FString("/Engine/_Temp/") + FPaths::GetBaseFilename(BlueprintPath);
+	BlueprintInternalPath = _BlueprintInternalPath;
+}
+
+UBlueprint* FPlatformAgnosticChecker::Blueprint = nullptr;
+FString FPlatformAgnosticChecker::BlueprintInternalPath = FString();
 

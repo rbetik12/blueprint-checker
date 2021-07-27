@@ -3,7 +3,7 @@
 
 #define mcheck(X)
 
-#define ERROR std::cout << "Error: " << __LINE__ << std::endl; \
+#define ERROR std::cout << "Error: " << __FILE__ << " " << __LINE__ << std::endl; \
 			exit(EXIT_FAILURE);
 
 void FEngineWorker::Init()
@@ -25,7 +25,7 @@ void FEngineWorker::PreStartupScreen()
 	GEngineLoop.PreInitPreStartupScreen(TEXT(""));
 #else
 	const TCHAR* CmdLine = TEXT("");
-	FDelayedAutoRegisterHelper::RunAndClearDelayedAutoRegisterDelegates(EDelayedRegisterRunPhase::StartOfEnginePreInit);
+		FDelayedAutoRegisterHelper::RunAndClearDelayedAutoRegisterDelegates(EDelayedRegisterRunPhase::StartOfEnginePreInit);
 	SCOPED_BOOT_TIMING("FEngineLoop::PreInitPreStartupScreen");
 
 	// The GLog singleton is lazy initialised and by default will assume that
@@ -320,6 +320,7 @@ void FEngineWorker::PreStartupScreen()
 			// We did not find a non-suffixed folder and we DID find the suffixed one.
 			// The engine MUST be launched with <GameName>Game.
 			const FText GameNameText = FText::FromString(FApp::GetProjectName());
+			// FMessageDialog::Open(EAppMsgType::Ok, FText::Format(LOCTEXT("RequiresGamePrefix", "Error: UE4Editor does not append 'Game' to the passed in game name.\nYou must use the full name.\nYou specified '{0}', use '{0}Game'."), GameNameText));
 			ERROR
 		}
 	}
@@ -918,7 +919,8 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 #endif
 
 	FEmbeddedCommunication::ForceTick(2);
-	
+
+#if WITH_ENGINE
 	// allow for game explorer processing (including parental controls) and firewalls installation
 	if (!FPlatformMisc::CommandLineCommands())
 	{
@@ -1029,14 +1031,368 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
 		// allow the platform to start up any features it may need
 		IPlatformFeaturesModule::Get();
 	}
+
+	{
+		SCOPED_BOOT_TIMING("InitGamePhys");
+		// Init physics engine before loading anything, in case we want to do things like cook during post-load.
+		if (!InitGamePhys())
+		{
+			// If we failed to initialize physics we cannot continue.
+			ERROR
+		}
+	}
+
+	{
+		bool bShouldCleanShaderWorkingDirectory = true;
+#if !(UE_BUILD_SHIPPING && WITH_EDITOR)
+		// Only clean the shader working directory if we are the first instance, to avoid deleting files in use by other instances
+		//@todo - check if any other instances are running right now
+		bShouldCleanShaderWorkingDirectory = GIsFirstInstance;
+#endif
+
+		if (bShouldCleanShaderWorkingDirectory && !FParse::Param(FCommandLine::Get(), TEXT("Multiprocess")))
+		{
+			SCOPED_BOOT_TIMING("FPlatformProcess::CleanShaderWorkingDirectory");
+
+			// get shader path, and convert it to the userdirectory
+			for (const auto& SHaderSourceDirectoryEntry : AllShaderSourceDirectoryMappings())
+			{
+				FString ShaderDir = FString(FPlatformProcess::BaseDir()) / SHaderSourceDirectoryEntry.Value;
+				FString UserShaderDir = IFileManager::Get().ConvertToAbsolutePathForExternalAppForWrite(*ShaderDir);
+				FPaths::CollapseRelativeDirectories(ShaderDir);
+
+				// make sure we don't delete from the source directory
+				if (ShaderDir != UserShaderDir)
+				{
+					IFileManager::Get().DeleteDirectory(*UserShaderDir, false, true);
+				}
+			}
+
+			FPlatformProcess::CleanShaderWorkingDir();
+		}
+	}
+
+#if !UE_BUILD_SHIPPING
+	GIsDemoMode = FParse::Param(FCommandLine::Get(), TEXT("DEMOMODE"));
+#endif
+
+	if (bHasEditorToken)
+	{
+#if WITH_EDITOR
+
+		// We're the editor.
+		GIsClient = true;
+		GIsServer = true;
+		GIsEditor = true;
+		PRIVATE_GIsRunningCommandlet = false;
+
+		GWarn = &UnrealEdWarn;
+
+#else
+		FMessageDialog::Open(EAppMsgType::Ok, NSLOCTEXT("Engine", "EditorNotSupported", "Editor not supported in this mode."));
+		FPlatformMisc::RequestExit(false);
+		return 1;
+#endif //WITH_EDITOR
+	}
+
+#endif // WITH_ENGINE
+	// If we're not in the editor stop collecting the backlog now that we know
+	if (!GIsEditor)
+	{
+		GLog->EnableBacklog(false);
+	}
+#if WITH_ENGINE
+
+	InitEngineTextLocalization();
+
+	bool bForceEnableHighDPI = false;
+#if WITH_EDITOR
+	bForceEnableHighDPI = FPIEPreviewDeviceModule::IsRequestingPreviewDevice();
+#endif
+
+	// This must be called before any window (including the splash screen is created
+	FSlateApplication::InitHighDPI(bForceEnableHighDPI);
+
+	UStringTable::InitializeEngineBridge();
+
+	if (FApp::ShouldUseThreadingForPerformance() && FPlatformMisc::AllowAudioThread())
+	{
+		bool bUseThreadedAudio = false;
+		if (!GIsEditor)
+		{
+			GConfig->GetBool(TEXT("Audio"), TEXT("UseAudioThread"), bUseThreadedAudio, GEngineIni);
+		}
+		FAudioThread::SetUseThreadedAudio(bUseThreadedAudio);
+	}
+
+	if (FPlatformProcess::SupportsMultithreading() && !IsRunningDedicatedServer() && (bIsRegularClient || bHasEditorToken))
+	{
+		SCOPED_BOOT_TIMING("FPlatformSplash::Show()");
+		FPlatformSplash::Show();
+	}
+
+	if (!IsRunningDedicatedServer() && (bHasEditorToken || bIsRegularClient))
+	{
+		// Init platform application
+		SCOPED_BOOT_TIMING("FSlateApplication::Create()");
+		FSlateApplication::Create();
+	}
+	else
+	{
+		// If we're not creating the slate application there is some basic initialization
+		// that it does that still must be done
+		EKeys::Initialize();
+		FCoreStyle::ResetToDefault();
+	}
+
+	if (GIsEditor)
+	{
+		// The editor makes use of all cultures in its UI, so pre-load the resource data now to avoid a hitch later
+		FInternationalization::Get().LoadAllCultureData();
+	}
+
+	FEmbeddedCommunication::ForceTick(3);
+
+	// PreInitContext.SlowTaskPtr = new FScopedSlowTask(100, NSLOCTEXT("EngineLoop", "EngineLoop_Initializing", "Initializing..."));
+	// FScopedSlowTask& SlowTask = *PreInitContext.SlowTaskPtr;
+
+	// SlowTask.EnterProgressFrame(10);
+
+#if USE_LOCALIZED_PACKAGE_CACHE
+	FPackageLocalizationManager::Get().InitializeFromLazyCallback([](FPackageLocalizationManager& InPackageLocalizationManager)
+	{
+		InPackageLocalizationManager.InitializeFromCache(MakeShareable(new FEnginePackageLocalizationCache()));
+	});
+#endif	// USE_LOCALIZED_PACKAGE_CACHE
+
+	{
+		SCOPED_BOOT_TIMING("FUniformBufferStruct::InitializeStructs()");
+		FShaderParametersMetadata::InitializeAllUniformBufferStructs();
+	}
+
+	{
+		SCOPED_BOOT_TIMING("RHIInit");
+		// Initialize the RHI.
+		RHIInit(bHasEditorToken);
+	}
+
+	{
+		SCOPED_BOOT_TIMING("RenderUtilsInit");
+		// One-time initialization of global variables based on engine configuration.
+		RenderUtilsInit();
+	}
+
+	{
+		bool bUseCodeLibrary = FPlatformProperties::RequiresCookedData() || GAllowCookedDataInEditorBuilds;
+		if (bUseCodeLibrary)
+		{
+			{
+				SCOPED_BOOT_TIMING("FShaderCodeLibrary::InitForRuntime");
+				// Will open material shader code storage if project was packaged with it
+				// This only opens the Global shader library, which is always in the content dir.
+				FShaderCodeLibrary::InitForRuntime(GMaxRHIShaderPlatform);
+			}
+
+#if !UE_EDITOR
+			// Cooked data only - but also requires the code library - game only
+			if (FPlatformProperties::RequiresCookedData())
+			{
+				SCOPED_BOOT_TIMING("FShaderPipelineCache::Initialize");
+				// Initialize the pipeline cache system. Opening is deferred until the manual call to
+				// OpenPipelineFileCache below, after content pak's ShaderCodeLibraries are loaded.
+				FShaderPipelineCache::Initialize(GMaxRHIShaderPlatform);
+			}
+#endif //!UE_EDITOR
+		}
+	}
+
+
+	bool bEnableShaderCompile = !FParse::Param(FCommandLine::Get(), TEXT("NoShaderCompile"));
+
+	if (bEnableShaderCompile && !FPlatformProperties::RequiresCookedData())
+	{
+		check(!GShaderCompilerStats);
+		GShaderCompilerStats = new FShaderCompilerStats();
+
+		check(!GShaderCompilingManager);
+		GShaderCompilingManager = new FShaderCompilingManager();
+
+		check(!GDistanceFieldAsyncQueue);
+		GDistanceFieldAsyncQueue = new FDistanceFieldAsyncQueue();
+
+		// Shader hash cache is required only for shader compilation.
+		InitializeShaderHashCache();
+	}
+
+	{
+		SCOPED_BOOT_TIMING("GetRendererModule");
+		// Cache the renderer module in the main thread so that we can safely retrieve it later from the rendering thread.
+		GetRendererModule();
+	}
+
+	{
+		if (bEnableShaderCompile)
+		{
+			SCOPED_BOOT_TIMING("InitializeShaderTypes");
+			// Initialize shader types before loading any shaders
+			InitializeShaderTypes();
+		}
+
+		FDelayedAutoRegisterHelper::RunAndClearDelayedAutoRegisterDelegates(EDelayedRegisterRunPhase::ShaderTypesReady);
+
+		// SlowTask.EnterProgressFrame(30);
+
+		// Load the global shaders.
+		// if (!IsRunningCommandlet())
+		// hack: don't load global shaders if we are cooking we will load the shaders for the correct platform later
+		if (bEnableShaderCompile &&
+			!IsRunningDedicatedServer() &&
+			!bIsCook)
+			// if (FParse::Param(FCommandLine::Get(), TEXT("Multiprocess")) == false)
+		{
+			LLM_SCOPE(ELLMTag::Shaders);
+			SCOPED_BOOT_TIMING("CompileGlobalShaderMap");
+			CompileGlobalShaderMap(false);
+			if (IsEngineExitRequested())
+			{
+				// This means we can't continue without the global shader map.
+				ERROR
+			}
+		}
+		else if (FPlatformProperties::RequiresCookedData() == false)
+		{
+			GetDerivedDataCacheRef();
+		}
+
+		{
+			SCOPED_BOOT_TIMING("CreateMoviePlayer");
+			CreateMoviePlayer();
+		}
+
+		if (FPreLoadScreenManager::ArePreLoadScreensEnabled())
+		{
+			SCOPED_BOOT_TIMING("FPreLoadScreenManager::Create");
+			FPreLoadScreenManager::Create();
+			ensure(FPreLoadScreenManager::Get());
+		}
+
+		// If platforms support early movie playback we have to start the rendering thread much earlier
+#if PLATFORM_SUPPORTS_EARLY_MOVIE_PLAYBACK
+		{
+			SCOPED_BOOT_TIMING("PostInitRHI");
+			PostInitRHI();
+		}
+
+		if (GUseThreadedRendering)
+		{
+			if (GRHISupportsRHIThread)
+			{
+				const bool DefaultUseRHIThread = true;
+				GUseRHIThread_InternalUseOnly = DefaultUseRHIThread;
+				if (FParse::Param(FCommandLine::Get(), TEXT("rhithread")))
+				{
+					GUseRHIThread_InternalUseOnly = true;
+				}
+				else if (FParse::Param(FCommandLine::Get(), TEXT("norhithread")))
+				{
+					GUseRHIThread_InternalUseOnly = false;
+				}
+			}
+				
+			SCOPED_BOOT_TIMING("StartRenderingThread");
+			StartRenderingThread();
+		}
+#endif
+
+		FEmbeddedCommunication::ForceTick(4);
+
+		{
+#if !UE_SERVER// && !UE_EDITOR
+			if (!IsRunningDedicatedServer() && !IsRunningCommandlet())
+			{
+				TSharedPtr<FSlateRenderer> SlateRenderer = GUsingNullRHI ?
+					FModuleManager::Get().LoadModuleChecked<ISlateNullRendererModule>("SlateNullRenderer").CreateSlateNullRenderer() :
+					FModuleManager::Get().GetModuleChecked<ISlateRHIRendererModule>("SlateRHIRenderer").CreateSlateRHIRenderer();
+				TSharedRef<FSlateRenderer> SlateRendererSharedRef = SlateRenderer.ToSharedRef();
+
+				{
+					SCOPED_BOOT_TIMING("CurrentSlateApp.InitializeRenderer");
+					// If Slate is being used, initialize the renderer after RHIInit
+					FSlateApplication& CurrentSlateApp = FSlateApplication::Get();
+					CurrentSlateApp.InitializeRenderer(SlateRendererSharedRef);
+				}
+
+				{
+					SCOPED_BOOT_TIMING("FEngineFontServices::Create");
+					// Create the engine font services now that the Slate renderer is ready
+					FEngineFontServices::Create();
+				}
+
+				{
+					SCOPED_BOOT_TIMING("LoadModulesForProject(ELoadingPhase::PostSplashScreen)");
+					// Load up all modules that need to hook into the custom splash screen
+					if (!IProjectManager::Get().LoadModulesForProject(ELoadingPhase::PostSplashScreen) || !IPluginManager::Get().LoadModulesForEnabledPlugins(ELoadingPhase::PostSplashScreen))
+					{
+						ERROR
+					}
+				}
+
+				{
+					SCOPED_BOOT_TIMING("PlayFirstPreLoadScreen");
+
+					if (FPreLoadScreenManager::Get())
+					{
+						{
+							SCOPED_BOOT_TIMING("PlayFirstPreLoadScreen - FPreLoadScreenManager::Get()->Initialize");
+							// initialize and present custom splash screen
+							FPreLoadScreenManager::Get()->Initialize(SlateRendererSharedRef.Get());
+						}
+
+						if (FPreLoadScreenManager::Get()->HasRegisteredPreLoadScreenType(EPreLoadScreenTypes::CustomSplashScreen))
+						{
+							FPreLoadScreenManager::Get()->PlayFirstPreLoadScreen(EPreLoadScreenTypes::CustomSplashScreen);
+						}
+#if PLATFORM_XBOXONE && WITH_LEGACY_XDK && ENABLE_XBOXONE_FAST_ACTIVATION
+						else
+						{
+							UE_LOG(LogInit, Warning, TEXT("Enable fast activation without enabling a custom splash screen may cause garbage frame buffer being presented"));
+						}
+#endif
+					}
+				}
+
+				// PreInitContext.SlateRenderer = SlateRenderer;
+			}
+#endif // !UE_SERVER
+		}
+	}
+#endif // WITH_ENGINE
+
+	// Save PreInitContext
+// 	PreInitContext.bDumpEarlyConfigReads = bDumpEarlyConfigReads;
+// 	PreInitContext.bDumpEarlyPakFileReads = bDumpEarlyPakFileReads;
+// 	PreInitContext.bForceQuitAfterEarlyReads = bForceQuitAfterEarlyReads;
+// 	PreInitContext.bWithConfigPatching = bWithConfigPatching;
+// 	PreInitContext.bHasEditorToken = bHasEditorToken;
+// #if WITH_ENGINE
+// 	PreInitContext.bDisableDisregardForGC = bDisableDisregardForGC;
+// 	PreInitContext.bIsRegularClient = bIsRegularClient;
+// #endif // WITH_ENGINE
+// 	PreInitContext.bTokenDoesNotHaveDash = bTokenDoesNotHaveDash;
+// 	PreInitContext.Token = Token;
+// #if UE_EDITOR || WITH_ENGINE
+// 	PreInitContext.CommandletCommandLine = CommandletCommandLine;
+// #endif // UE_EDITOR || WITH_ENGINE
+// 	PreInitContext.CommandLineCopy = CommandLineCopy;
+	
 #endif
 }
 
 void FEngineWorker::PostStartupScreen()
 {
-// #if !CUSTOM_ENGINE_INITIALIZATION
+	// #if !CUSTOM_ENGINE_INITIALIZATION
 	// GEngineLoop.PreInitPostStartupScreen(TEXT(""));
-// #else
+	// #else
 	bool bDumpEarlyConfigReads = false;
 	bool bDumpEarlyPakFileReads = false;
 	bool bForceQuitAfterEarlyReads = false;
@@ -1048,7 +1404,7 @@ void FEngineWorker::PostStartupScreen()
 	FString Token;
 	const TCHAR* CommandletCommandLine = nullptr;
 	TCHAR* CommandLineCopy = TEXT("");
-	
+
 	FPackageName::RegisterShortPackageNamesForUObjectModules();
 
 	{
@@ -1095,7 +1451,7 @@ void FEngineWorker::PostStartupScreen()
 	}
 	NotifyRegistrationComplete();
 	FReferencerFinder::NotifyRegistrationComplete();
-	
+
 	// if (UOnlineEngineInterface::Get()->IsLoaded())
 	// {
 	// 	SetIsServerForOnlineSubsystemsDelegate(FQueryIsRunningServer::CreateStatic(&IsServerDelegateForOSS));
@@ -1105,7 +1461,8 @@ void FEngineWorker::PostStartupScreen()
 	if (FPlatformProcess::SupportsMultithreading())
 	{
 		FModuleManager::Get().LoadModule(TEXT("ProfilerService"));
-		FModuleManager::Get().GetModuleChecked<IProfilerServiceModule>("ProfilerService").CreateProfilerServiceManager();
+		FModuleManager::Get().GetModuleChecked<IProfilerServiceModule>("ProfilerService").
+		                      CreateProfilerServiceManager();
 	}
-// #endif
+	// #endif
 }
