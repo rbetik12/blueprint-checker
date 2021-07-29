@@ -22,6 +22,15 @@ void FPlatformAgnosticChecker::Exit()
 	FEngineWorker::Exit();
 }
 
+#if RUN_WITH_TESTS
+#include <gtest/gtest.h>
+void FPlatformAgnosticChecker::InitializeTestEnvironment(int Argc, char* Argv[])
+{
+	::testing::InitGoogleTest(&Argc, Argv);
+	RUN_ALL_TESTS();
+}
+#endif
+
 bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 {
 	const FString EngineContentDirPath(FPaths::EngineContentDir() + "_Temp/_");

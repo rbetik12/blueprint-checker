@@ -23,11 +23,15 @@ int main(int Argc, char* Argv[])
 		std::cerr << "Not enough arguments!" << std::endl;
 		exit(EXIT_FAILURE);
 	}
-
+	
 	const size_t ArgStrLen = strlen(Argv[1]);
 	const FString& BlueprintPathStr = FString(ArgStrLen, Argv[1]);
-	
+
+#if RUN_WITH_TESTS
+	FPlatformAgnosticChecker::InitializeTestEnvironment(Argc, Argv);
+#else
 	FPlatformAgnosticChecker::Check(*BlueprintPathStr);
+#endif
 	return 0;
 }
 

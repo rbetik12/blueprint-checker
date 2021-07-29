@@ -3,7 +3,8 @@ using UnrealBuildTool;
 public class BlueprintChecker : ModuleRules {
 	public BlueprintChecker(ReadOnlyTargetRules Target) : base(Target) {
 		PrivateDefinitions.AddRange(new string[] {
-			"CUSTOM_ENGINE_INITIALIZATION=1"
+			"CUSTOM_ENGINE_INITIALIZATION=1",
+			"RUN_WITH_TESTS=1",
 		});
 
 		PrivateIncludePaths.AddRange(new string[] {
@@ -38,9 +39,9 @@ public class BlueprintChecker : ModuleRules {
 			"Slate",
 			"RHI",
 			"InputCore",
-			"Launch"
+			"Launch",
+			"GoogleTest"
 		});
-		
 		PrivateIncludePathModuleNames.AddRange(new string[] {
 			
 		});
