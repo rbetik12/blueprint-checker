@@ -1,16 +1,22 @@
+using System.IO;
 using UnrealBuildTool;
 
 public class BlueprintChecker : ModuleRules {
-	public BlueprintChecker(ReadOnlyTargetRules Target) : base(Target) {
-		PrivateDefinitions.AddRange(new string[] {
+	public BlueprintChecker(ReadOnlyTargetRules Target) : base(Target)
+	{
+		PrivateDefinitions.AddRange(new string[]
+		{
 			"CUSTOM_ENGINE_INITIALIZATION=1",
-			"RUN_WITH_TESTS=1",
-			"TEST_UASSETS_DIRECTORY=\"C:/Users/Vitaliy/Code/UnrealEngine/Engine/Content/_TestUAssets/\""
+			// "RUN_WITH_TESTS=1",
+			"TEST_UASSETS_DIRECTORY=\"C:/Users/Vitaliy/Code/UnrealEngine/Engine/Content/_TestUAssets/\"",
+			"PROGRAM_VERSION=\"0.1\"",
+			"PROGRAM_DESCRIPTION=\"Blueprint deserializer\""
 		});
 
 		PrivateIncludePaths.AddRange(new string[] {
 			"Runtime/Launch/Private",
 			"Runtime/CoreUObject/Private",
+			Path.Combine(ModuleDirectory, "Private/ThirdParty")
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {
@@ -42,9 +48,6 @@ public class BlueprintChecker : ModuleRules {
 			"InputCore",
 			"Launch",
 			"GoogleTest"
-		});
-		PrivateIncludePathModuleNames.AddRange(new string[] {
-			
 		});
 	}
 }

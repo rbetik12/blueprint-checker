@@ -1,44 +1,75 @@
-// Here we explicitly say to linker which entry point to use
-#pragma comment(linker, "/SUBSYSTEM:CONSOLE /ENTRY:mainCRTStartup")
-
 #include "BlueprintChecker.h"
-
 #include "FPlatformAgnosticChecker.h"
 #include "RequiredProgramMainCPPInclude.h"
+#include "easyargs/easyargs.h"
 #include "UObject/CoreRedirects.h"
 #include "Serialization/AsyncLoadingThread.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogBlueprintChecker, Log, All);
-
 IMPLEMENT_PRIMARY_GAME_MODULE(FDefaultModuleImpl, BlueprintChecker, BlueprintChecker)
 
-FEngineLoop GEngineLoop;
-bool GIsConsoleExecutable = true;
-
-// Entry point is here
 int main(int Argc, char* Argv[])
 {
-	if (Argc < 2)
+	EasyArgs *EzArgs = new EasyArgs(Argc, Argv);
+	EzArgs->Version(PROGRAM_VERSION)
+			->Description(PROGRAM_DESCRIPTION)
+			->Flag("-h", "--help", "Help")
+			->Value("-m", "--mode", "Utility launch mode [Single|Batch]", true)
+			->Value("-f", "--filepath", "Path to a file.\nIn single mode - blueprint path.\nIn batch mode - filenames file path", true);
+
+	if (EzArgs->IsSet("-h") || EzArgs->IsSet("--help"))
 	{
-		std::cerr << "Not enough arguments!" << std::endl;
+		EzArgs->PrintUsage();
+		exit(EXIT_SUCCESS);
+	}
+	
+	std::string Mode = EzArgs->GetValueFor("--mode");
+
+	if (Mode.empty())
+	{
+		Mode = EzArgs->GetValueFor("-m");
+		if (Mode.empty())
+		{
+			std::wcerr << "You must provide program run mode with -m or --mode flags!" << std::endl;
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	std::string Filepath = EzArgs->GetValueFor("--filepath");
+
+	if (Filepath.empty())
+	{
+		Filepath = EzArgs->GetValueFor("-f");
+		if (Filepath.empty())
+		{
+			std::wcerr << "You must provide file path!" << std::endl;
+			exit(EXIT_FAILURE);
+		}
+	}
+	
+	if (Mode == "Single")
+	{
+		const size_t ArgStrLen = strlen(Filepath.c_str());
+		const FString& BlueprintPathStr = FString(ArgStrLen, Filepath.c_str());
+		
+		//Single mode stuff
+	}
+	else if (Mode == "Batch")
+	{
+		//Batch mode stuff
+	}
+	else
+	{
+		std::wcerr << "Incorrect mode!" << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	
-	const size_t ArgStrLen = strlen(Argv[1]);
-	const FString& BlueprintPathStr = FString(ArgStrLen, Argv[1]);
-
 #if RUN_WITH_TESTS
 	FPlatformAgnosticChecker::InitializeTestEnvironment(Argc, Argv);
 #else
-	FPlatformAgnosticChecker::Init();
-	FPlatformAgnosticChecker::Check(*BlueprintPathStr);
-	FPlatformAgnosticChecker::Exit();
+	// const FString& BlueprintPathStr = FString(ArgStrLen, Argv[1]);
+	// FPlatformAgnosticChecker::Init();
+	// FPlatformAgnosticChecker::Check(*BlueprintPathStr);
+	// FPlatformAgnosticChecker::Exit();
 #endif
-	return 0;
-}
-
-//TODO Get rid of two entry points in the file, but it looks like linker wants both of these functions here
-int32 WINAPI WinMain( _In_ HINSTANCE hInInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ char*, _In_ int32 nCmdShow )
-{
 	return 0;
 }
