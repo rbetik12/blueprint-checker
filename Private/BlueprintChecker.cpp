@@ -51,7 +51,17 @@ int main(int Argc, char* Argv[])
 		const size_t ArgStrLen = strlen(Filepath.c_str());
 		const FString& BlueprintPathStr = FString(ArgStrLen, Filepath.c_str());
 		
-		//Single mode stuff
+		FPlatformAgnosticChecker::Init();
+		const bool Result = FPlatformAgnosticChecker::Check(*BlueprintPathStr);
+		if (Result)
+		{
+			std::wcout << "Parsed successfully!" << std::endl;
+		}
+		else
+		{
+			std::wcout << "Failed to parse!" << std::endl;
+		}
+		FPlatformAgnosticChecker::Exit();
 	}
 	else if (Mode == "Batch")
 	{
@@ -63,13 +73,5 @@ int main(int Argc, char* Argv[])
 		exit(EXIT_FAILURE);
 	}
 	
-#if RUN_WITH_TESTS
-	FPlatformAgnosticChecker::InitializeTestEnvironment(Argc, Argv);
-#else
-	// const FString& BlueprintPathStr = FString(ArgStrLen, Argv[1]);
-	// FPlatformAgnosticChecker::Init();
-	// FPlatformAgnosticChecker::Check(*BlueprintPathStr);
-	// FPlatformAgnosticChecker::Exit();
-#endif
 	return 0;
 }

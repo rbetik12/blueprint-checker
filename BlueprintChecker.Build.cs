@@ -7,7 +7,7 @@ public class BlueprintChecker : ModuleRules {
 		PrivateDefinitions.AddRange(new string[]
 		{
 			"CUSTOM_ENGINE_INITIALIZATION=1",
-			// "RUN_WITH_TESTS=1",
+			"RUN_WITH_TESTS=1",
 			"TEST_UASSETS_DIRECTORY=\"C:/Users/Vitaliy/Code/UnrealEngine/Engine/Content/_TestUAssets/\"",
 			"PROGRAM_VERSION=\"0.1\"",
 			"PROGRAM_DESCRIPTION=\"Blueprint deserializer\""
