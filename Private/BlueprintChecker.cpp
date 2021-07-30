@@ -5,7 +5,7 @@
 #include "easyargs/easyargs.h"
 #include <fstream>
 
-EasyArgs *EzArgs = nullptr;
+EasyArgs* EzArgs = nullptr;
 std::string Mode;
 std::string PathToFile;
 
@@ -43,14 +43,23 @@ void InitializeEasyArgs(int Argc, char* Argv[])
 {
 	EzArgs = new EasyArgs(Argc, Argv);
 	EzArgs->Version(PROGRAM_VERSION)
-			->Description(PROGRAM_DESCRIPTION)
-			->Flag("-h", "--help", "Help")
-			->Value("-m", "--mode", "Utility launch mode [Single|Batch]", true)
-			->Value("-f", "--filepath", "Path to a file.\nIn single mode - blueprint path.\nIn batch mode - filenames file path", true);
+	      ->Description(PROGRAM_DESCRIPTION)
+	      ->Flag("-h", "--help", "Help")
+	      ->Flag("-t", "--test", "Run all tests")
+	      ->Value("-m", "--mode", "Utility launch mode [Single|Batch]", false)
+	      ->Value("-f", "--filepath",
+	              "Path to a file.\nIn single mode - blueprint path.\nIn batch mode - filenames file path", false);
 
 	if (EzArgs->IsSet("-h") || EzArgs->IsSet("--help"))
 	{
 		EzArgs->PrintUsage();
+		exit(EXIT_SUCCESS);
+	}
+
+	if (EzArgs->IsSet("-t") || EzArgs->IsSet("--test"))
+	{
+		FPlatformAgnosticChecker::InitializeTestEnvironment(Argc, Argv);
+		FPlatformAgnosticChecker::Exit();
 		exit(EXIT_SUCCESS);
 	}
 }
@@ -72,22 +81,23 @@ bool ParseBlueprint(std::string BPFilepath)
 	return Result;
 }
 
-int main(int Argc, char* Argv[])
+bool RunMain(int Argc, char* Argv[])
 {
 	InitializeEasyArgs(Argc, Argv);
-	
+
 	ExtractMode();
 	ExtractFilepath();
-	
+
 	if (Mode == "Single")
-		{
+	{
 		FPlatformAgnosticChecker::Init();
-		
-		ParseBlueprint(PathToFile);
-		
+		const bool Result = ParseBlueprint(PathToFile);
 		FPlatformAgnosticChecker::Exit();
+
+		return Result;
 	}
-	else if (Mode == "Batch")
+
+	if (Mode == "Batch")
 	{
 		//TODO check whether file exists or not
 		std::ifstream FileStream(PathToFile);
@@ -96,12 +106,12 @@ int main(int Argc, char* Argv[])
 		{
 			std::wcerr << "Can't open batch file!" << std::endl;
 			FileStream.close();
-			exit(EXIT_FAILURE);
+			return false;
 		}
-		
+
 		std::vector<std::string> BlueprintFilePaths;
 		std::string Path;
-		
+
 		while (std::getline(FileStream, Path))
 		{
 			BlueprintFilePaths.push_back(Path);
@@ -109,22 +119,31 @@ int main(int Argc, char* Argv[])
 
 		if (BlueprintFilePaths.empty())
 		{
-			exit(EXIT_SUCCESS);
+			return false;
 		}
+
+		bool SuccessfulParsing = true;
 
 		FPlatformAgnosticChecker::Init();
-		for (auto& BlueprintPath: BlueprintFilePaths)
+		for (auto& BlueprintPath : BlueprintFilePaths)
 		{
-			ParseBlueprint(BlueprintPath);
+			if (!ParseBlueprint(BlueprintPath))
+			{
+				SuccessfulParsing = false;
+			}
 		}
 		FPlatformAgnosticChecker::Exit();
-	}
-	else
-	{
-		std::wcerr << "Incorrect mode!" << std::endl;
-		exit(EXIT_FAILURE);
+
+		return SuccessfulParsing;
 	}
 
+	std::wcerr << "Incorrect mode!" << std::endl;
+	return false;
+}
+
+int main(int Argc, char* Argv[])
+{
+	RunMain(Argc, Argv);
 	//TODO EzArgs var cleaning
 	return 0;
 }

@@ -14,11 +14,6 @@ protected:
 	{
 		FPlatformAgnosticChecker::Init();
 	}
-
-	static void TearDownTestSuite()
-	{
-		FPlatformAgnosticChecker::Exit();
-	}
 	
 	//TODO Gather all files in TEST_UASSETS_DIRECTORY programmatically
 	std::array<FString, 3> UAssetFilenames = {

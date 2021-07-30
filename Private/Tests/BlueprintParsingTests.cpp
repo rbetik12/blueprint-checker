@@ -13,11 +13,6 @@ protected:
 	{
 		FPlatformAgnosticChecker::Init();
 	}
-
-	static void TearDownTestSuite()
-	{
-		FPlatformAgnosticChecker::Exit();
-	}
 	
 	std::array<FString, 1> BlueprintFilenames = {
 		"NewBlueprint"
