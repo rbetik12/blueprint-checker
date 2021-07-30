@@ -41,4 +41,14 @@ TEST_F(CopyFileTests, ExistingUAssetCopyTest)
 	}
 }
 
+TEST_F(CopyFileTests, UnExistingUAssetCopyTest)
+{
+	for (auto Filename: UAssetFilenames)
+	{
+		const FString Filepath = FString(TEST_UASSETS_DIRECTORY) + Filename + "_" + ".uasset";
+		const bool Result = FPlatformAgnosticChecker::CopyFileToContentDir(*Filepath);
+		EXPECT_FALSE(Result);
+	}
+}
+
 #endif
