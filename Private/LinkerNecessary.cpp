@@ -1,5 +1,8 @@
 // Here we explicitly say to linker which entry point to use
 #pragma comment(linker, "/SUBSYSTEM:CONSOLE /ENTRY:mainCRTStartup")
+#include "Modules/ModuleManager.h"
+
+IMPLEMENT_PRIMARY_GAME_MODULE(FDefaultModuleImpl, BlueprintChecker, BlueprintChecker)
 
 #include "LaunchEngineLoop.h"
 #include <Windows.h>

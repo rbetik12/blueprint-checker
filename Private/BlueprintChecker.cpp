@@ -1,18 +1,64 @@
 #include "BlueprintChecker.h"
+
 #include "FPlatformAgnosticChecker.h"
 #include "RequiredProgramMainCPPInclude.h"
 #include "easyargs/easyargs.h"
-#include "UObject/CoreRedirects.h"
-#include "Serialization/AsyncLoadingThread.h"
-
 #include <fstream>
 
-IMPLEMENT_PRIMARY_GAME_MODULE(FDefaultModuleImpl, BlueprintChecker, BlueprintChecker)
+EasyArgs *EzArgs = nullptr;
+std::string Mode;
+std::string PathToFile;
 
-bool ParseBlueprint(std::string Filepath)
+void ExtractFilepath()
 {
-	const size_t ArgStrLen = strlen(Filepath.c_str());
-	const FString& BlueprintPathStr = FString(ArgStrLen, Filepath.c_str());
+	PathToFile = EzArgs->GetValueFor("--filepath");
+
+	if (PathToFile.empty())
+	{
+		PathToFile = EzArgs->GetValueFor("-f");
+		if (PathToFile.empty())
+		{
+			std::wcerr << "You must provide file path!" << std::endl;
+			exit(EXIT_FAILURE);
+		}
+	}
+}
+
+void ExtractMode()
+{
+	Mode = EzArgs->GetValueFor("--mode");
+
+	if (Mode.empty())
+	{
+		Mode = EzArgs->GetValueFor("-m");
+		if (Mode.empty())
+		{
+			std::wcerr << "You must provide program run mode with -m or --mode flags!" << std::endl;
+			exit(EXIT_FAILURE);
+		}
+	}
+}
+
+void InitializeEasyArgs(int Argc, char* Argv[])
+{
+	EzArgs = new EasyArgs(Argc, Argv);
+	EzArgs->Version(PROGRAM_VERSION)
+			->Description(PROGRAM_DESCRIPTION)
+			->Flag("-h", "--help", "Help")
+			->Value("-m", "--mode", "Utility launch mode [Single|Batch]", true)
+			->Value("-f", "--filepath", "Path to a file.\nIn single mode - blueprint path.\nIn batch mode - filenames file path", true);
+
+	if (EzArgs->IsSet("-h") || EzArgs->IsSet("--help"))
+	{
+		EzArgs->PrintUsage();
+		exit(EXIT_SUCCESS);
+	}
+}
+
+bool ParseBlueprint(std::string BPFilepath)
+{
+	const size_t ArgStrLen = strlen(BPFilepath.c_str());
+	const FString& BlueprintPathStr = FString(ArgStrLen, BPFilepath.c_str());
 	const bool Result = FPlatformAgnosticChecker::Check(*BlueprintPathStr);
 	if (Result)
 	{
@@ -28,55 +74,31 @@ bool ParseBlueprint(std::string Filepath)
 
 int main(int Argc, char* Argv[])
 {
-	EasyArgs *EzArgs = new EasyArgs(Argc, Argv);
-	EzArgs->Version(PROGRAM_VERSION)
-			->Description(PROGRAM_DESCRIPTION)
-			->Flag("-h", "--help", "Help")
-			->Value("-m", "--mode", "Utility launch mode [Single|Batch]", true)
-			->Value("-f", "--filepath", "Path to a file.\nIn single mode - blueprint path.\nIn batch mode - filenames file path", true);
-
-	if (EzArgs->IsSet("-h") || EzArgs->IsSet("--help"))
-	{
-		EzArgs->PrintUsage();
-		exit(EXIT_SUCCESS);
-	}
+	InitializeEasyArgs(Argc, Argv);
 	
-	std::string Mode = EzArgs->GetValueFor("--mode");
-
-	if (Mode.empty())
-	{
-		Mode = EzArgs->GetValueFor("-m");
-		if (Mode.empty())
-		{
-			std::wcerr << "You must provide program run mode with -m or --mode flags!" << std::endl;
-			exit(EXIT_FAILURE);
-		}
-	}
-
-	std::string Filepath = EzArgs->GetValueFor("--filepath");
-
-	if (Filepath.empty())
-	{
-		Filepath = EzArgs->GetValueFor("-f");
-		if (Filepath.empty())
-		{
-			std::wcerr << "You must provide file path!" << std::endl;
-			exit(EXIT_FAILURE);
-		}
-	}
+	ExtractMode();
+	ExtractFilepath();
 	
 	if (Mode == "Single")
 		{
 		FPlatformAgnosticChecker::Init();
 		
-		ParseBlueprint(Filepath);
+		ParseBlueprint(PathToFile);
 		
 		FPlatformAgnosticChecker::Exit();
 	}
 	else if (Mode == "Batch")
 	{
 		//TODO check whether file exists or not
-		std::ifstream FileStream(Filepath);
+		std::ifstream FileStream(PathToFile);
+
+		if (!FileStream.good())
+		{
+			std::wcerr << "Can't open batch file!" << std::endl;
+			FileStream.close();
+			exit(EXIT_FAILURE);
+		}
+		
 		std::vector<std::string> BlueprintFilePaths;
 		std::string Path;
 		
@@ -96,7 +118,6 @@ int main(int Argc, char* Argv[])
 			ParseBlueprint(BlueprintPath);
 		}
 		FPlatformAgnosticChecker::Exit();
-		//Batch mode stuff
 	}
 	else
 	{
