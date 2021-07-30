@@ -20,10 +20,8 @@ public:
 private:
 #endif
 	static bool CopyFileToContentDir(const TCHAR* BlueprintPath);
-	static bool ParseBlueprint();
-	static void ConstructBlueprintInternalPath(const TCHAR* BlueprintPath);
-
-	static FString BlueprintInternalPath;
-	static UBlueprint* Blueprint;
+	static UBlueprint* ParseBlueprint(const FString& BlueprintInternalPath);
+	static FString ConstructBlueprintInternalPath(const TCHAR* BlueprintPath);
+	
 	static bool bIsEngineInitialized;
 };

@@ -9,9 +9,13 @@ bool FPlatformAgnosticChecker::Check(const TCHAR* BlueprintPath)
 {
 	if (CopyFileToContentDir(BlueprintPath))
 	{
-		ConstructBlueprintInternalPath(BlueprintPath);
-		const bool ParseResult = ParseBlueprint();
-		return ParseResult;
+		FString InternalPath = ConstructBlueprintInternalPath(BlueprintPath);
+		const UBlueprint* Blueprint = ParseBlueprint(InternalPath);
+
+		if (Blueprint)
+		{
+			return true;
+		}
 	}
 
 	return false;
@@ -50,22 +54,16 @@ bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 	return true;
 }
 
-bool FPlatformAgnosticChecker::ParseBlueprint()
+UBlueprint* FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPath)
 {
-	Blueprint = LoadObject<UBlueprint>(nullptr, *BlueprintInternalPath);
-
-	if (Blueprint)
-	{
-		return true;
-	}
-
-	return false;
+	UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *BlueprintInternalPath);
+	return Blueprint;
 }
 
-void FPlatformAgnosticChecker::ConstructBlueprintInternalPath(const TCHAR* BlueprintPath)
+FString FPlatformAgnosticChecker::ConstructBlueprintInternalPath(const TCHAR* BlueprintPath)
 {
-	const FString _BlueprintInternalPath = FString("/Engine/_Temp/") + FPaths::GetBaseFilename(BlueprintPath);
-	BlueprintInternalPath = _BlueprintInternalPath;
+	const FString BlueprintInternalPath = FString("/Engine/_Temp/") + FPaths::GetBaseFilename(BlueprintPath);
+	return BlueprintInternalPath;
 }
 
 void FPlatformAgnosticChecker::Init()
@@ -77,8 +75,6 @@ void FPlatformAgnosticChecker::Init()
 	}
 }
 
-UBlueprint* FPlatformAgnosticChecker::Blueprint = nullptr;
-FString FPlatformAgnosticChecker::BlueprintInternalPath = FString();
 bool FPlatformAgnosticChecker::bIsEngineInitialized = false;
 
 

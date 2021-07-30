@@ -5,7 +5,26 @@
 #include "UObject/CoreRedirects.h"
 #include "Serialization/AsyncLoadingThread.h"
 
+#include <fstream>
+
 IMPLEMENT_PRIMARY_GAME_MODULE(FDefaultModuleImpl, BlueprintChecker, BlueprintChecker)
+
+bool ParseBlueprint(std::string Filepath)
+{
+	const size_t ArgStrLen = strlen(Filepath.c_str());
+	const FString& BlueprintPathStr = FString(ArgStrLen, Filepath.c_str());
+	const bool Result = FPlatformAgnosticChecker::Check(*BlueprintPathStr);
+	if (Result)
+	{
+		std::wcout << "Parsed successfully!" << std::endl;
+	}
+	else
+	{
+		std::wcout << "Failed to parse!" << std::endl;
+	}
+
+	return Result;
+}
 
 int main(int Argc, char* Argv[])
 {
@@ -47,24 +66,36 @@ int main(int Argc, char* Argv[])
 	}
 	
 	if (Mode == "Single")
-	{
-		const size_t ArgStrLen = strlen(Filepath.c_str());
-		const FString& BlueprintPathStr = FString(ArgStrLen, Filepath.c_str());
-		
+		{
 		FPlatformAgnosticChecker::Init();
-		const bool Result = FPlatformAgnosticChecker::Check(*BlueprintPathStr);
-		if (Result)
-		{
-			std::wcout << "Parsed successfully!" << std::endl;
-		}
-		else
-		{
-			std::wcout << "Failed to parse!" << std::endl;
-		}
+		
+		ParseBlueprint(Filepath);
+		
 		FPlatformAgnosticChecker::Exit();
 	}
 	else if (Mode == "Batch")
 	{
+		//TODO check whether file exists or not
+		std::ifstream FileStream(Filepath);
+		std::vector<std::string> BlueprintFilePaths;
+		std::string Path;
+		
+		while (std::getline(FileStream, Path))
+		{
+			BlueprintFilePaths.push_back(Path);
+		}
+
+		if (BlueprintFilePaths.empty())
+		{
+			exit(EXIT_SUCCESS);
+		}
+
+		FPlatformAgnosticChecker::Init();
+		for (auto& BlueprintPath: BlueprintFilePaths)
+		{
+			ParseBlueprint(BlueprintPath);
+		}
+		FPlatformAgnosticChecker::Exit();
 		//Batch mode stuff
 	}
 	else
@@ -72,6 +103,7 @@ int main(int Argc, char* Argv[])
 		std::wcerr << "Incorrect mode!" << std::endl;
 		exit(EXIT_FAILURE);
 	}
-	
+
+	//TODO EzArgs var cleaning
 	return 0;
 }
