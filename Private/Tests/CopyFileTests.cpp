@@ -7,7 +7,7 @@
 #include <gtest/gtest.h>
 #include <array>
 
-#define TEST_UASSETS_DIRECTORY "C:/Users/Vitaliy/Code/UnrealEngine/Engine/Content/_TestUAssets"
+#define TEST_UASSETS_DIRECTORY "C:/Users/Vitaliy/Code/UnrealEngine/Engine/Content/_TestUAssets/"
 
 class CopyFileTests: public ::testing::Test
 {
@@ -35,7 +35,7 @@ TEST_F(CopyFileTests, ExistingUAssetCopyTest)
 {
 	for (auto Filename: UAssetFilenames)
 	{
-		const FString Filepath = FString(TEST_UASSETS_DIRECTORY) + Filename;
+		const FString Filepath = FString(TEST_UASSETS_DIRECTORY) + Filename + ".uasset";
 		const bool Result = FPlatformAgnosticChecker::CopyFileToContentDir(*Filepath);
 		EXPECT_TRUE(Result);
 	}
