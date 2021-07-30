@@ -30,7 +30,9 @@ int main(int Argc, char* Argv[])
 #if RUN_WITH_TESTS
 	FPlatformAgnosticChecker::InitializeTestEnvironment(Argc, Argv);
 #else
+	FPlatformAgnosticChecker::Init();
 	FPlatformAgnosticChecker::Check(*BlueprintPathStr);
+	FPlatformAgnosticChecker::Exit();
 #endif
 	return 0;
 }

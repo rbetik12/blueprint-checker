@@ -2,12 +2,9 @@
 #if RUN_WITH_TESTS
 
 #include "FPlatformAgnosticChecker.h"
-#include "FEngineWorker.h"
 
 #include <gtest/gtest.h>
 #include <array>
-
-#define TEST_UASSETS_DIRECTORY "C:/Users/Vitaliy/Code/UnrealEngine/Engine/Content/_TestUAssets/"
 
 class CopyFileTests: public ::testing::Test
 {
@@ -15,12 +12,12 @@ class CopyFileTests: public ::testing::Test
 protected:
 	static void SetUpTestSuite() 
 	{
-		FEngineWorker::Init();
+		FPlatformAgnosticChecker::Init();
 	}
 
 	static void TearDownTestSuite()
 	{
-		FEngineWorker::Exit();
+		FPlatformAgnosticChecker::Exit();
 	}
 	
 	//TODO Gather all files in TEST_UASSETS_DIRECTORY programmatically

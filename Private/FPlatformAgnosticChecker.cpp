@@ -5,15 +5,16 @@
 #include <iostream>
 #include "FEngineWorker.h"
 
-void FPlatformAgnosticChecker::Check(const TCHAR* BlueprintPath)
+bool FPlatformAgnosticChecker::Check(const TCHAR* BlueprintPath)
 {
-	FEngineWorker::Init();
 	if (CopyFileToContentDir(BlueprintPath))
 	{
 		ConstructBlueprintInternalPath(BlueprintPath);
-		ParseBlueprint();
+		const bool ParseResult = ParseBlueprint();
+		return ParseResult;
 	}
-	Exit();
+
+	return false;
 }
 
 void FPlatformAgnosticChecker::Exit()
@@ -49,9 +50,16 @@ bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 	return true;
 }
 
-void FPlatformAgnosticChecker::ParseBlueprint()
+bool FPlatformAgnosticChecker::ParseBlueprint()
 {
 	Blueprint = LoadObject<UBlueprint>(nullptr, *BlueprintInternalPath);
+
+	if (Blueprint)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 void FPlatformAgnosticChecker::ConstructBlueprintInternalPath(const TCHAR* BlueprintPath)
@@ -60,6 +68,17 @@ void FPlatformAgnosticChecker::ConstructBlueprintInternalPath(const TCHAR* Bluep
 	BlueprintInternalPath = _BlueprintInternalPath;
 }
 
+void FPlatformAgnosticChecker::Init()
+{
+	if (!bIsEngineInitialized)
+	{
+		FEngineWorker::Init();
+		bIsEngineInitialized = true;
+	}
+}
+
 UBlueprint* FPlatformAgnosticChecker::Blueprint = nullptr;
 FString FPlatformAgnosticChecker::BlueprintInternalPath = FString();
+bool FPlatformAgnosticChecker::bIsEngineInitialized = false;
+
 
