@@ -38,11 +38,11 @@ void FPlatformAgnosticChecker::InitializeTestEnvironment(int Argc, char* Argv[])
 
 bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 {
-	const FString EngineContentDirPath(FPaths::EngineContentDir() + "_Temp/_");
+	const FString EngineContentDirPath(FPaths::EngineContentDir() + "_Temp/");
 	const FString DestFilePath = EngineContentDirPath + FPaths::GetCleanFilename(BlueprintPath);
 	
 	IFileManager* FileManager = &IFileManager::Get();
-	const uint32 CopyResult = FileManager->Copy(*DestFilePath, BlueprintPath, true);
+	const uint32 CopyResult = FileManager->Copy(*DestFilePath, BlueprintPath, true, true, false, nullptr, FILEREAD_None, FILEWRITE_EvenIfReadOnly);
 
 	if (CopyResult != COPY_OK)
 	{
@@ -57,6 +57,7 @@ bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 UBlueprint* FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPath)
 {
 	UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *BlueprintInternalPath);
+	
 	return Blueprint;
 }
 

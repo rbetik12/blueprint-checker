@@ -14,13 +14,16 @@ protected:
 		FPlatformAgnosticChecker::Init();
 	}
 	
-	std::array<FString, 1> BlueprintFilenames = {
-		"NewBlueprint"
+	std::array<FString, 3> BlueprintFilenames = {
+		"Pickup_AmmoGun",
+		"Pickup_AmmoLauncher",
+		"TaskAlwaysTrue"
 	};
 
+	//TODO Add some nonblueprint uassets files here
 	std::array<FString, 2> NonBlueprintFilenames = {
-		"ThirdPersonCharacter",
-		"ThirdPersonGameMode"
+		"",
+		""
 	};
 };
 
