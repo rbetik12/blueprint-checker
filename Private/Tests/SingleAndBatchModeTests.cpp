@@ -1,4 +1,5 @@
 #pragma once
+#include "FEngineWorker.h"
 #if RUN_WITH_TESTS
 
 #include <gtest/gtest.h>
@@ -26,13 +27,13 @@ protected:
 	};
 };
 
-TEST_F(SingleAndBatchModeTests, SingleModeTest)
+TEST_F(SingleAndBatchModeTests, BatchModeTest)
 {
 	const int Argc = 3;
 	char* Argv[Argc] = {
 		"",
-		"--mode=Single",
-		"-f=C:/Users/Vitaliy/Code/UnrealEngine/Engine/Content/_TestUAssets/NewBlueprint.uasset"
+		"--mode=Batch",
+		"-f=C:/Users/Vitaliy/Code/UnrealEngine/Engine/Content/_TestUAssets/batch.txt"
 	};
 	
 	const bool Result = RunMain(Argc, Argv);
