@@ -2,6 +2,7 @@
 #include "Containers/UnrealString.h"
 #include "Engine/Blueprint.h"
 #include "HAL/Platform.h"
+#include "UEAssets/UE4AssetData.h"
 
 class FPlatformAgnosticChecker
 {
@@ -20,8 +21,9 @@ public:
 private:
 #endif
 	static bool CopyFileToContentDir(const TCHAR* BlueprintPath);
-	static UBlueprint* ParseBlueprint(const FString& BlueprintInternalPath);
+	static bool ParseBlueprint(const FString& BlueprintInternalPath);
 	static FString ConstructBlueprintInternalPath(const TCHAR* BlueprintPath);
 	
 	static bool bIsEngineInitialized;
+	static UE4AssetData AssetData;
 };
