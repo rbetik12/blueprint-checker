@@ -3,8 +3,12 @@
 #include "Misc/Paths.h"
 #include "HAL/FileManager.h"
 #include <iostream>
+#include <stdio.h>
 #include "FEngineWorker.h"
 #include <EdGraph/EdGraph.h>
+
+#include "Serialization/FSerializer.h"
+#include "UEAssets/UE4AssetSerializedHeader.h"
 
 bool FPlatformAgnosticChecker::Check(const TCHAR* BlueprintPath)
 {
@@ -77,6 +81,85 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 	ExtractGraphInfo(Blueprint->EventGraphs);
 	
 	return true;
+}
+
+bool FPlatformAgnosticChecker::SerializeBlueprintInfo()
+{
+	const FString EngineContentDirPath(FPaths::EngineContentDir() + "_Temp/");
+	const FString DestFilePath = EngineContentDirPath + "UE4Assets.dat";
+
+	FILE* SerializeFile = fopen(TCHAR_TO_UTF8(*DestFilePath), "wb");
+	
+	if (SerializeFile == nullptr)
+	{
+		return false;
+	}
+
+	bool SerializeStatus = true;
+	
+	UE4AssetSerializedHeader Header;
+	Header.BlueprintClassesSize = AssetData.BlueprintClasses.size();
+	Header.OtherClassesSize = AssetData.OtherClasses.size();
+	Header.K2NodesSize = AssetData.K2VariableSets.size();
+
+	const int WriteAmount = fwrite(&Header, sizeof(Header), 1, SerializeFile);
+
+	if (WriteAmount < 1)
+	{
+		SerializeStatus = false;
+	}
+
+	for (auto& BlueprintClass: AssetData.BlueprintClasses)
+	{
+		if (!FSerializer::SerializeInt32(BlueprintClass.Index, SerializeFile))
+		{
+			SerializeStatus = false;
+		}
+		if (!FSerializer::SerializeFString(BlueprintClass.ObjectName, SerializeFile))
+		{
+			SerializeStatus = false;
+		}
+		if (!FSerializer::SerializeFString(BlueprintClass.ClassName, SerializeFile))
+		{
+			SerializeStatus = false;
+		}
+		if (!FSerializer::SerializeFString(BlueprintClass.SuperClassName, SerializeFile))
+		{
+			SerializeStatus = false;
+		}
+	}
+
+	for (auto& K2Node: AssetData.K2VariableSets)
+	{
+		if (!FSerializer::SerializeInt32(K2Node.Index, SerializeFile))
+		{
+			SerializeStatus = false;
+		}
+		if (!FSerializer::SerializeInt32(static_cast<int>(K2Node.ObjectKind), SerializeFile))
+		{
+			SerializeStatus = false;
+		}
+		if (!FSerializer::SerializeFString(K2Node.MemberName, SerializeFile))
+		{
+			SerializeStatus = false;
+		}
+	}
+
+	for (auto& OtherAsset: AssetData.OtherClasses)
+	{
+		if (!FSerializer::SerializeInt32(OtherAsset.Index, SerializeFile))
+		{
+			SerializeStatus = false;
+		}
+		if (!FSerializer::SerializeFString(OtherAsset.ClassName, SerializeFile))
+		{
+			SerializeStatus = false;
+		}
+	}
+
+	fclose(SerializeFile);
+	
+	return SerializeStatus;
 }
 
 FString FPlatformAgnosticChecker::ConstructBlueprintInternalPath(const TCHAR* BlueprintPath)

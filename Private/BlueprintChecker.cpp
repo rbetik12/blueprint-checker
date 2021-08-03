@@ -132,6 +132,7 @@ bool RunMain(int Argc, char* Argv[])
 				SuccessfulParsing = false;
 			}
 		}
+		FPlatformAgnosticChecker::SerializeBlueprintInfo();
 		FPlatformAgnosticChecker::Exit();
 
 		return SuccessfulParsing;

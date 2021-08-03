@@ -12,7 +12,8 @@ public:
 	
 	// User provides absolute path to blueprint and we must convert it to engine-friendly path
 	static bool Check(const TCHAR* BlueprintPath);
-	
+
+	static bool SerializeBlueprintInfo();
 #if RUN_WITH_TESTS
 	static void InitializeTestEnvironment(int Argc, char* Argv[]);
 #endif

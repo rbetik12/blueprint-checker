@@ -71,7 +71,7 @@ struct OtherAssetObject
 class UE4AssetData
 {
 public:
-	std::vector<K2GraphNodeObject> K2VariableSets;
 	std::vector<BlueprintClassObject> BlueprintClasses;
+	std::vector<K2GraphNodeObject> K2VariableSets;
 	std::vector<OtherAssetObject> OtherClasses;
 };
