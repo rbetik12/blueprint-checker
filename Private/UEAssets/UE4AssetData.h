@@ -36,6 +36,10 @@ struct K2GraphNodeObject
 	static Kind GetKindByClassName(const FString& ClassName)
 	{
 		//TODO Implement getter
+		if (ClassName == "K2Node_CallFunction")
+		{
+			return Kind::FunctionCall;
+		}
 		return Kind::Other;
 	}
 

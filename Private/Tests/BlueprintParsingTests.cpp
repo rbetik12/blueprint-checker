@@ -14,10 +14,9 @@ protected:
 		FPlatformAgnosticChecker::Init();
 	}
 	
-	std::array<FString, 3> BlueprintFilenames = {
+	std::array<FString, 2> BlueprintFilenames = {
 		"Pickup_AmmoGun",
 		"Pickup_AmmoLauncher",
-		"TaskAlwaysTrue"
 	};
 
 	//TODO Add some nonblueprint uassets files here

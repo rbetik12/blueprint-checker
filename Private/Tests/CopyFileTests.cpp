@@ -17,8 +17,8 @@ protected:
 	
 	//TODO Gather all files in TEST_UASSETS_DIRECTORY programmatically
 	std::array<FString, 2> UAssetFilenames = {
-		"ThirdPersonCharacter",
-		"ThirdPersonGameMode"
+		"tThirdPersonCharacter",
+		"tThirdPersonGameMode"
 	};
 };
 

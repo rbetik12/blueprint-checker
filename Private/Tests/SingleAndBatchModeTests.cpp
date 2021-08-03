@@ -19,7 +19,7 @@ protected:
 	}
 	
 	std::array<FString, 1> BlueprintFilenames = {
-		"NewBlueprint"
+		"tNewBlueprint"
 	};
 
 	std::array<FString, 1> BatchFiles = {
@@ -33,7 +33,7 @@ TEST_F(SingleAndBatchModeTests, BatchModeTest)
 	char* Argv[Argc] = {
 		"",
 		"--mode=Batch",
-		"-f=C:/Users/Vitaliy/Code/UnrealEngine/Engine/Content/_TestUAssets/batch.txt"
+		"-f=C:/Users/Vitaliy/Code/UnrealEngine/Engine/Content/_TestUAssets/BatchedBlueprints/batch.txt"
 	};
 	
 	const bool Result = RunMain(Argc, Argv);
