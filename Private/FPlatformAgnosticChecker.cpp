@@ -69,7 +69,25 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 	const BlueprintClassObject BPClassObject(0, ObjectName, ClassName, ParentClassName);
 	AssetData.BlueprintClasses.push_back(BPClassObject);
 
-	for (const auto& Graph: Blueprint->UbergraphPages)
+	ExtractGraphInfo(Blueprint->UbergraphPages);
+	ExtractGraphInfo(Blueprint->FunctionGraphs);
+	ExtractGraphInfo(Blueprint->DelegateSignatureGraphs);
+	ExtractGraphInfo(Blueprint->MacroGraphs);
+	ExtractGraphInfo(Blueprint->IntermediateGeneratedGraphs);
+	ExtractGraphInfo(Blueprint->EventGraphs);
+	
+	return true;
+}
+
+FString FPlatformAgnosticChecker::ConstructBlueprintInternalPath(const TCHAR* BlueprintPath)
+{
+	const FString BlueprintInternalPath = FString("/Engine/_Temp/") + FPaths::GetBaseFilename(BlueprintPath);
+	return BlueprintInternalPath;
+}
+
+void FPlatformAgnosticChecker::ExtractGraphInfo(TArray<UEdGraph*> ExtractGraph)
+{
+	for (const auto& Graph: ExtractGraph)
 	{
 		for (const auto& Node: Graph->Nodes)
 		{
@@ -87,14 +105,6 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 			}
 		}
 	}
-	
-	return true;
-}
-
-FString FPlatformAgnosticChecker::ConstructBlueprintInternalPath(const TCHAR* BlueprintPath)
-{
-	const FString BlueprintInternalPath = FString("/Engine/_Temp/") + FPaths::GetBaseFilename(BlueprintPath);
-	return BlueprintInternalPath;
 }
 
 void FPlatformAgnosticChecker::Init()

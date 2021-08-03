@@ -23,6 +23,7 @@ private:
 	static bool CopyFileToContentDir(const TCHAR* BlueprintPath);
 	static bool ParseBlueprint(const FString& BlueprintInternalPath);
 	static FString ConstructBlueprintInternalPath(const TCHAR* BlueprintPath);
+	static void ExtractGraphInfo(TArray<UEdGraph*> Graph);
 	
 	static bool bIsEngineInitialized;
 	static UE4AssetData AssetData;
