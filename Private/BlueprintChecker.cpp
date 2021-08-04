@@ -91,7 +91,12 @@ bool RunMain(int Argc, char* Argv[])
 	if (Mode == "Single")
 	{
 		FPlatformAgnosticChecker::Init();
-		const bool Result = ParseBlueprint(PathToFile);
+		bool Result = ParseBlueprint(PathToFile);
+		Result = FPlatformAgnosticChecker::SerializeBlueprintInfo();
+		if (!Result)
+		{
+			std::cerr << "Can't serialize blueprint" << std::endl;
+		}
 		FPlatformAgnosticChecker::Exit();
 
 		return Result;
@@ -132,7 +137,11 @@ bool RunMain(int Argc, char* Argv[])
 				SuccessfulParsing = false;
 			}
 		}
-		FPlatformAgnosticChecker::SerializeBlueprintInfo();
+		const bool Result = FPlatformAgnosticChecker::SerializeBlueprintInfo();
+		if (!Result)
+		{
+			std::cerr << "Can't serialize blueprint" << std::endl;
+		}
 		FPlatformAgnosticChecker::Exit();
 
 		return SuccessfulParsing;
