@@ -7,6 +7,7 @@
 #include "FEngineWorker.h"
 #include <EdGraph/EdGraph.h>
 
+#include "Engine/Engine.h"
 #include "Serialization/FSerializer.h"
 #include "UEAssets/UE4AssetSerializedHeader.h"
 
@@ -17,7 +18,7 @@ bool FPlatformAgnosticChecker::Check(const TCHAR* BlueprintPath)
 		const FString InternalPath = ConstructBlueprintInternalPath(BlueprintPath);
 		const FString BlueprintFilename = FPaths::GetBaseFilename(BlueprintPath);
 		const bool ParseResult = ParseBlueprint(InternalPath, BlueprintFilename);
-
+		DeleteCopiedUAsset(BlueprintFilename);
 		if (ParseResult)
 		{
 			return true;
@@ -48,7 +49,7 @@ bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 	const FString DestFilePath = EngineContentDirPath + FPaths::GetCleanFilename(BlueprintPath);
 	
 	IFileManager* FileManager = &IFileManager::Get();
-	const uint32 CopyResult = FileManager->Copy(*DestFilePath, BlueprintPath, true, true, false, nullptr, FILEREAD_None, FILEWRITE_EvenIfReadOnly);
+	const uint32 CopyResult = FileManager->Copy(*DestFilePath, BlueprintPath, true, false);
 
 	if (CopyResult != COPY_OK)
 	{
@@ -82,6 +83,10 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 	ExtractGraphInfo(Blueprint->IntermediateGeneratedGraphs, AssetData);
 	ExtractGraphInfo(Blueprint->EventGraphs, AssetData);
 
+	Blueprint->ConditionalBeginDestroy();
+	Blueprint = nullptr;
+	GEngine->ForceGarbageCollection();
+	
 	return SerializeBlueprintInfo(AssetData, BlueprintFilename);
 }
 
@@ -190,6 +195,13 @@ void FPlatformAgnosticChecker::ExtractGraphInfo(const TArray<UEdGraph*> ExtractG
 			}
 		}
 	}
+}
+
+bool FPlatformAgnosticChecker::DeleteCopiedUAsset(const FString& BlueprintFilename)
+{
+	const FString EngineContentDirPath(FPaths::EngineContentDir() + "_Temp/" + BlueprintFilename + ".uasset");
+	IFileManager* FileManager = &IFileManager::Get();
+	return FileManager->Delete(*FPaths::ConvertRelativePathToFull(EngineContentDirPath), false, true);
 }
 
 void FPlatformAgnosticChecker::Init()
