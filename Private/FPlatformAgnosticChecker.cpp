@@ -14,8 +14,9 @@ bool FPlatformAgnosticChecker::Check(const TCHAR* BlueprintPath)
 {
 	if (CopyFileToContentDir(BlueprintPath))
 	{
-		FString InternalPath = ConstructBlueprintInternalPath(BlueprintPath);
-		const bool ParseResult = ParseBlueprint(InternalPath);
+		const FString InternalPath = ConstructBlueprintInternalPath(BlueprintPath);
+		const FString BlueprintFilename = FPaths::GetBaseFilename(BlueprintPath);
+		const bool ParseResult = ParseBlueprint(InternalPath, BlueprintFilename);
 
 		if (ParseResult)
 		{
@@ -59,13 +60,14 @@ bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 	return true;
 }
 
-bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPath)
+bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPath, const FString& BlueprintFilename)
 {
 	UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *BlueprintInternalPath);
 	if (!Blueprint)
 	{
 		return false;
 	}
+	UE4AssetData AssetData;
 	const FString ParentClassName = Blueprint->ParentClass ? Blueprint->ParentClass->GetName() : FString();
 	const FString ObjectName = Blueprint->GetName();
 	const FString ClassName = Blueprint->GetClass()->GetName();
@@ -73,20 +75,20 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 	const BlueprintClassObject BPClassObject(0, ObjectName, ClassName, ParentClassName);
 	AssetData.BlueprintClasses.push_back(BPClassObject);
 
-	ExtractGraphInfo(Blueprint->UbergraphPages);
-	ExtractGraphInfo(Blueprint->FunctionGraphs);
-	ExtractGraphInfo(Blueprint->DelegateSignatureGraphs);
-	ExtractGraphInfo(Blueprint->MacroGraphs);
-	ExtractGraphInfo(Blueprint->IntermediateGeneratedGraphs);
-	ExtractGraphInfo(Blueprint->EventGraphs);
-	
-	return true;
+	ExtractGraphInfo(Blueprint->UbergraphPages, AssetData);
+	ExtractGraphInfo(Blueprint->FunctionGraphs, AssetData);
+	ExtractGraphInfo(Blueprint->DelegateSignatureGraphs, AssetData);
+	ExtractGraphInfo(Blueprint->MacroGraphs, AssetData);
+	ExtractGraphInfo(Blueprint->IntermediateGeneratedGraphs, AssetData);
+	ExtractGraphInfo(Blueprint->EventGraphs, AssetData);
+
+	return SerializeBlueprintInfo(AssetData, BlueprintFilename);
 }
 
-bool FPlatformAgnosticChecker::SerializeBlueprintInfo()
+bool FPlatformAgnosticChecker::SerializeBlueprintInfo(const UE4AssetData& AssetData, const FString& BlueprintFilename)
 {
 	const FString EngineContentDirPath(FPaths::EngineContentDir() + "_Temp/");
-	const FString DestFilePath = EngineContentDirPath + "UE4Assets.dat";
+	const FString DestFilePath = EngineContentDirPath + BlueprintFilename + ".dat";
 
 	FILE* SerializeFile = fopen(TCHAR_TO_UTF8(*DestFilePath), "wb");
 	
@@ -168,7 +170,7 @@ FString FPlatformAgnosticChecker::ConstructBlueprintInternalPath(const TCHAR* Bl
 	return BlueprintInternalPath;
 }
 
-void FPlatformAgnosticChecker::ExtractGraphInfo(TArray<UEdGraph*> ExtractGraph)
+void FPlatformAgnosticChecker::ExtractGraphInfo(const TArray<UEdGraph*> ExtractGraph, UE4AssetData& AssetData)
 {
 	for (const auto& Graph: ExtractGraph)
 	{
@@ -200,6 +202,5 @@ void FPlatformAgnosticChecker::Init()
 }
 
 bool FPlatformAgnosticChecker::bIsEngineInitialized = false;
-UE4AssetData FPlatformAgnosticChecker::AssetData = UE4AssetData();
 
 

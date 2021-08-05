@@ -4,6 +4,9 @@
 #include "RequiredProgramMainCPPInclude.h"
 #include "easyargs/easyargs.h"
 #include <fstream>
+#include <thread>
+
+#include "Multithreading/FParseBlueprintTask.h"
 
 EasyArgs* EzArgs = nullptr;
 std::string Mode;
@@ -16,7 +19,7 @@ void ExtractFilepath()
 	if (PathToFile.empty())
 	{
 		PathToFile = EzArgs->GetValueFor("-f");
-		if (PathToFile.empty())
+		if (PathToFile.empty() && Mode != "StdIn")
 		{
 			std::wcerr << "You must provide file path!" << std::endl;
 			exit(EXIT_FAILURE);
@@ -46,9 +49,9 @@ void InitializeEasyArgs(int Argc, char* Argv[])
 	      ->Description(PROGRAM_DESCRIPTION)
 	      ->Flag("-h", "--help", "Help")
 	      ->Flag("-t", "--test", "Run all tests")
-	      ->Value("-m", "--mode", "Utility launch mode [Single|Batch]", false)
+	      ->Value("-m", "--mode", "Utility launch mode [Single|Batch|StdIn]", false)
 	      ->Value("-f", "--filepath",
-	              "Path to a file.\nIn single mode - blueprint path.\nIn batch mode - filenames file path", false);
+	              "Path to a file.\nIn single mode - blueprint path.\nIn batch mode - filenames file path\nLaunch in daemon-like mode", false);
 
 	if (EzArgs->IsSet("-h") || EzArgs->IsSet("--help"))
 	{
@@ -92,7 +95,6 @@ bool RunMain(int Argc, char* Argv[])
 	{
 		FPlatformAgnosticChecker::Init();
 		bool Result = ParseBlueprint(PathToFile);
-		Result = FPlatformAgnosticChecker::SerializeBlueprintInfo();
 		if (!Result)
 		{
 			std::cerr << "Can't serialize blueprint" << std::endl;
@@ -104,7 +106,6 @@ bool RunMain(int Argc, char* Argv[])
 
 	if (Mode == "Batch")
 	{
-		//TODO check whether file exists or not
 		std::ifstream FileStream(PathToFile);
 
 		if (!FileStream.good())
@@ -128,8 +129,8 @@ bool RunMain(int Argc, char* Argv[])
 		}
 
 		bool SuccessfulParsing = true;
-
 		FPlatformAgnosticChecker::Init();
+		GIsGameThreadIdInitialized = false;
 		for (auto& BlueprintPath : BlueprintFilePaths)
 		{
 			if (!ParseBlueprint(BlueprintPath))
@@ -137,14 +138,35 @@ bool RunMain(int Argc, char* Argv[])
 				SuccessfulParsing = false;
 			}
 		}
-		const bool Result = FPlatformAgnosticChecker::SerializeBlueprintInfo();
-		if (!Result)
-		{
-			std::cerr << "Can't serialize blueprint" << std::endl;
-		}
+		
 		FPlatformAgnosticChecker::Exit();
 
 		return SuccessfulParsing;
+	}
+
+	if (Mode == "StdIn")
+	{
+		std::cout << "StdIn!" << std::endl;
+
+		FPlatformAgnosticChecker::Init();
+
+		std::string BlueprintPath;
+		bool IsRunning = true;
+		
+		while (IsRunning)
+		{
+			std::cin >> BlueprintPath;
+			
+			if (BlueprintPath == "Exit")
+			{
+				IsRunning = false;
+				continue;
+			}
+			
+			ParseBlueprint(BlueprintPath);
+		}
+		FPlatformAgnosticChecker::Exit();
+		return true;
 	}
 
 	std::wcerr << "Incorrect mode!" << std::endl;
