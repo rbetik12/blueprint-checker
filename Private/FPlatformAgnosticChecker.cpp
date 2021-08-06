@@ -18,8 +18,8 @@ bool FPlatformAgnosticChecker::Check(const TCHAR* BlueprintPath)
 		const FString InternalPath = ConstructBlueprintInternalPath(BlueprintPath);
 		const FString BlueprintFilename = FPaths::GetBaseFilename(BlueprintPath);
 		const bool ParseResult = ParseBlueprint(InternalPath, BlueprintFilename);
-		DeleteCopiedUAsset(BlueprintFilename);
-		if (ParseResult)
+		const bool DeleteResult = DeleteCopiedUAsset(BlueprintFilename);
+		if (ParseResult && DeleteResult)
 		{
 			return true;
 		}
@@ -82,11 +82,9 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 	ExtractGraphInfo(Blueprint->MacroGraphs, AssetData);
 	ExtractGraphInfo(Blueprint->IntermediateGeneratedGraphs, AssetData);
 	ExtractGraphInfo(Blueprint->EventGraphs, AssetData);
-
-	Blueprint->ConditionalBeginDestroy();
-	Blueprint = nullptr;
-	GEngine->ForceGarbageCollection();
 	
+	Blueprint = nullptr;
+	TryCollectGarbage(RF_NoFlags, false);
 	return SerializeBlueprintInfo(AssetData, BlueprintFilename);
 }
 

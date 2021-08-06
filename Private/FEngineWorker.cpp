@@ -1410,6 +1410,53 @@ void FEngineWorker::PostStartupScreen()
 		FModuleManager::Get().GetModuleChecked<IProfilerServiceModule>("ProfilerService").
 		                      CreateProfilerServiceManager();
 	}
+
+	// CommandletClass->GetDefaultObject<UCommandlet>()->CreateCustomEngine(CommandletCommandLine);
+	if ( GEngine == nullptr )
+	{
+#if WITH_EDITOR
+		if ( GIsEditor )
+		{
+			FString EditorEngineClassName;
+			GConfig->GetString(TEXT("/Script/Engine.Engine"), TEXT("EditorEngine"), EditorEngineClassName, GEngineIni);
+			UClass* EditorEngineClass = StaticLoadClass( UEditorEngine::StaticClass(), nullptr, *EditorEngineClassName);
+			if (EditorEngineClass == nullptr)
+			{
+				UE_LOG(LogInit, Fatal, TEXT("Failed to load Editor Engine class '%s'."), *EditorEngineClassName);
+			}
+
+			GEngine = GEditor = NewObject<UEditorEngine>(GetTransientPackage(), EditorEngineClass);
+
+			GEngine->ParseCommandline();
+
+			UE_LOG(LogInit, Log, TEXT("Initializing Editor Engine..."));
+			GEditor->InitEditor(&GEngineLoop);
+			UE_LOG(LogInit, Log, TEXT("Initializing Editor Engine Completed"));
+		}
+		else
+#endif
+		{
+			FString GameEngineClassName;
+			GConfig->GetString(TEXT("/Script/Engine.Engine"), TEXT("GameEngine"), GameEngineClassName, GEngineIni);
+
+			UClass* EngineClass = StaticLoadClass( UEngine::StaticClass(), nullptr, *GameEngineClassName);
+
+			if (EngineClass == nullptr)
+			{
+				UE_LOG(LogInit, Fatal, TEXT("Failed to load Engine class '%s'."), *GameEngineClassName);
+			}
+
+			// must do this here so that the engine object that we create on the next line receives the correct property values
+			GEngine = NewObject<UEngine>(GetTransientPackage(), EngineClass);
+			check(GEngine);
+
+			GEngine->ParseCommandline();
+
+			UE_LOG(LogInit, Log, TEXT("Initializing Game Engine..."));
+			GEngine->Init(&GEngineLoop);
+			UE_LOG(LogInit, Log, TEXT("Initializing Game Engine Completed"));
+		}
+	}
 }
 
 bool FEngineWorker::AppInit()
