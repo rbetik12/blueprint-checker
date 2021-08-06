@@ -10,5 +10,4 @@ private:
 	static void PreStartupScreen();
 	static void PostStartupScreen();
 	static bool AppInit();
-	static bool LoadTargetPlatformManagerModule();
 };

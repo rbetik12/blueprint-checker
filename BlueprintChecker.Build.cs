@@ -13,6 +13,11 @@ public class BlueprintChecker : ModuleRules {
 			"PROGRAM_DESCRIPTION=\"Blueprint deserializer\""
 		});
 
+		if (Target.Platform == UnrealTargetPlatform.Win32 || Target.Platform == UnrealTargetPlatform.Win64)
+		{
+			PrivateDefinitions.Add("_CRT_SECURE_NO_WARNINGS");
+		}
+
 		PrivateIncludePaths.AddRange(new string[] {
 			"Runtime/Launch/Private",
 			"Runtime/CoreUObject/Private",

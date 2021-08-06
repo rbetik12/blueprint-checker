@@ -31,3 +31,60 @@ bool FSerializer::SerializeInt32(const int Value, FILE* File)
 
 	return true;
 }
+
+bool FSerializer::SerializeBlueprintClassObject(const BlueprintClassObject& Obj, FILE* File)
+{
+	bool SerializeStatus = true;
+	if (!SerializeInt32(Obj.Index, File))
+	{
+		SerializeStatus = false;
+	}
+	if (!SerializeFString(Obj.ObjectName, File))
+	{
+		SerializeStatus = false;
+	}
+	if (!SerializeFString(Obj.ClassName, File))
+	{
+		SerializeStatus = false;
+	}
+	if (!SerializeFString(Obj.SuperClassName, File))
+	{
+		SerializeStatus = false;
+	}
+
+	return SerializeStatus;
+}
+
+bool FSerializer::SerializeK2GraphNodeObject(const K2GraphNodeObject& Obj, FILE* File)
+{
+	bool SerializeStatus = true;
+	if (!SerializeInt32(Obj.Index, File))
+	{
+		SerializeStatus = false;
+	}
+	if (!SerializeInt32(static_cast<int>(Obj.ObjectKind), File))
+	{
+		SerializeStatus = false;
+	}
+	if (!SerializeFString(Obj.MemberName, File))
+	{
+		SerializeStatus = false;
+	}
+
+	return SerializeStatus;
+}
+
+bool FSerializer::SerializeOtherAssetObject(const OtherAssetObject& Obj, FILE* File)
+{
+	bool SerializeStatus = true;
+	if (!SerializeInt32(Obj.Index, File))
+	{
+		SerializeStatus = false;
+	}
+	if (!SerializeFString(Obj.ClassName, File))
+	{
+		SerializeStatus = false;
+	}
+
+	return SerializeStatus;
+}

@@ -3,11 +3,9 @@
 #include "FPlatformAgnosticChecker.h"
 #include "RequiredProgramMainCPPInclude.h"
 #include "easyargs/easyargs.h"
-#include <fstream>
-#include <thread>
 
-#include "Multithreading/FParseBlueprintTask.h"
-
+FEngineLoop GEngineLoop;
+bool GIsConsoleExecutable = true;
 EasyArgs* EzArgs = nullptr;
 std::string Mode;
 std::string PathToFile;
@@ -67,23 +65,6 @@ void InitializeEasyArgs(int Argc, char* Argv[])
 	}
 }
 
-bool ParseBlueprint(std::string BPFilepath)
-{
-	const size_t ArgStrLen = strlen(BPFilepath.c_str());
-	const FString& BlueprintPathStr = FString(ArgStrLen, BPFilepath.c_str());
-	const bool Result = FPlatformAgnosticChecker::Check(*BlueprintPathStr);
-	if (Result)
-	{
-		std::wcout << "Parsed successfully!" << std::endl;
-	}
-	else
-	{
-		std::wcout << "Failed to parse!" << std::endl;
-	}
-
-	return Result;
-}
-
 bool RunMain(int Argc, char* Argv[])
 {
 	InitializeEasyArgs(Argc, Argv);
@@ -93,80 +74,17 @@ bool RunMain(int Argc, char* Argv[])
 
 	if (Mode == "Single")
 	{
-		FPlatformAgnosticChecker::Init();
-		bool Result = ParseBlueprint(PathToFile);
-		if (!Result)
-		{
-			std::cerr << "Can't serialize blueprint" << std::endl;
-		}
-		FPlatformAgnosticChecker::Exit();
-
-		return Result;
+		return RunSingleMode(PathToFile);
 	}
 
 	if (Mode == "Batch")
 	{
-		std::ifstream FileStream(PathToFile);
-
-		if (!FileStream.good())
-		{
-			std::wcerr << "Can't open batch file!" << std::endl;
-			FileStream.close();
-			return false;
-		}
-
-		std::vector<std::string> BlueprintFilePaths;
-		std::string Path;
-
-		while (std::getline(FileStream, Path))
-		{
-			BlueprintFilePaths.push_back(Path);
-		}
-
-		if (BlueprintFilePaths.empty())
-		{
-			return false;
-		}
-
-		bool SuccessfulParsing = true;
-		FPlatformAgnosticChecker::Init();
-		GIsGameThreadIdInitialized = false;
-		for (auto& BlueprintPath : BlueprintFilePaths)
-		{
-			if (!ParseBlueprint(BlueprintPath))
-			{
-				SuccessfulParsing = false;
-			}
-		}
-		
-		FPlatformAgnosticChecker::Exit();
-
-		return SuccessfulParsing;
+		return RunBatchMode(PathToFile);
 	}
 
 	if (Mode == "StdIn")
 	{
-		std::cout << "StdIn!" << std::endl;
-
-		FPlatformAgnosticChecker::Init();
-
-		std::string BlueprintPath;
-		bool IsRunning = true;
-		
-		while (IsRunning)
-		{
-			std::cin >> BlueprintPath;
-			
-			if (BlueprintPath == "Exit")
-			{
-				IsRunning = false;
-				continue;
-			}
-			
-			ParseBlueprint(BlueprintPath);
-		}
-		FPlatformAgnosticChecker::Exit();
-		return true;
+		return RunStdInMode();
 	}
 
 	std::wcerr << "Incorrect mode!" << std::endl;
@@ -175,7 +93,10 @@ bool RunMain(int Argc, char* Argv[])
 
 int main(int Argc, char* Argv[])
 {
-	RunMain(Argc, Argv);
+	if (!RunMain(Argc, Argv))
+	{
+		exit(EXIT_FAILURE);
+	}
 	//TODO EzArgs var cleaning
 	return 0;
 }

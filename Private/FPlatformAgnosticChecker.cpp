@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include "FEngineWorker.h"
 #include <EdGraph/EdGraph.h>
-
 #include "Engine/Engine.h"
 #include "Serialization/FSerializer.h"
 #include "UEAssets/UE4AssetSerializedHeader.h"
@@ -63,27 +62,37 @@ bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 
 bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPath, const FString& BlueprintFilename)
 {
-	UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *BlueprintInternalPath);
-	if (!Blueprint)
+	UObject* Object = LoadObject<UObject>(nullptr, *BlueprintInternalPath);
+	if (!Object)
 	{
 		return false;
 	}
-	UE4AssetData AssetData;
-	const FString ParentClassName = Blueprint->ParentClass ? Blueprint->ParentClass->GetName() : FString();
-	const FString ObjectName = Blueprint->GetName();
-	const FString ClassName = Blueprint->GetClass()->GetName();
-
-	const BlueprintClassObject BPClassObject(0, ObjectName, ClassName, ParentClassName);
-	AssetData.BlueprintClasses.push_back(BPClassObject);
-
-	ExtractGraphInfo(Blueprint->UbergraphPages, AssetData);
-	ExtractGraphInfo(Blueprint->FunctionGraphs, AssetData);
-	ExtractGraphInfo(Blueprint->DelegateSignatureGraphs, AssetData);
-	ExtractGraphInfo(Blueprint->MacroGraphs, AssetData);
-	ExtractGraphInfo(Blueprint->IntermediateGeneratedGraphs, AssetData);
-	ExtractGraphInfo(Blueprint->EventGraphs, AssetData);
 	
-	Blueprint = nullptr;
+	UE4AssetData AssetData;
+	if (Object->GetClass() == UBlueprint::StaticClass())
+	{
+		const UBlueprint* Blueprint = Cast<UBlueprint>(Object);
+		const FString ParentClassName = Blueprint->ParentClass ? Blueprint->ParentClass->GetName() : FString();
+		const FString ObjectName = Blueprint->GetName();
+		const FString ClassName = Blueprint->GetClass()->GetName();
+
+		const BlueprintClassObject BPClassObject(0, ObjectName, ClassName, ParentClassName);
+		AssetData.BlueprintClasses.push_back(BPClassObject);
+
+		ExtractGraphInfo(Blueprint->UbergraphPages, AssetData);
+		ExtractGraphInfo(Blueprint->FunctionGraphs, AssetData);
+		ExtractGraphInfo(Blueprint->DelegateSignatureGraphs, AssetData);
+		ExtractGraphInfo(Blueprint->MacroGraphs, AssetData);
+		ExtractGraphInfo(Blueprint->IntermediateGeneratedGraphs, AssetData);
+		ExtractGraphInfo(Blueprint->EventGraphs, AssetData);
+	}
+	else
+	{
+		OtherAssetObject OtherAsset(0, Object->GetClass()->GetName());
+		AssetData.OtherClasses.push_back(OtherAsset);
+	}
+	
+	Object = nullptr;
 	TryCollectGarbage(RF_NoFlags, false);
 	return SerializeBlueprintInfo(AssetData, BlueprintFilename);
 }
@@ -116,19 +125,7 @@ bool FPlatformAgnosticChecker::SerializeBlueprintInfo(const UE4AssetData& AssetD
 
 	for (auto& BlueprintClass: AssetData.BlueprintClasses)
 	{
-		if (!FSerializer::SerializeInt32(BlueprintClass.Index, SerializeFile))
-		{
-			SerializeStatus = false;
-		}
-		if (!FSerializer::SerializeFString(BlueprintClass.ObjectName, SerializeFile))
-		{
-			SerializeStatus = false;
-		}
-		if (!FSerializer::SerializeFString(BlueprintClass.ClassName, SerializeFile))
-		{
-			SerializeStatus = false;
-		}
-		if (!FSerializer::SerializeFString(BlueprintClass.SuperClassName, SerializeFile))
+		if (!FSerializer::SerializeBlueprintClassObject(BlueprintClass, SerializeFile))
 		{
 			SerializeStatus = false;
 		}
@@ -136,15 +133,7 @@ bool FPlatformAgnosticChecker::SerializeBlueprintInfo(const UE4AssetData& AssetD
 
 	for (auto& K2Node: AssetData.K2VariableSets)
 	{
-		if (!FSerializer::SerializeInt32(K2Node.Index, SerializeFile))
-		{
-			SerializeStatus = false;
-		}
-		if (!FSerializer::SerializeInt32(static_cast<int>(K2Node.ObjectKind), SerializeFile))
-		{
-			SerializeStatus = false;
-		}
-		if (!FSerializer::SerializeFString(K2Node.MemberName, SerializeFile))
+		if (!FSerializer::SerializeK2GraphNodeObject(K2Node, SerializeFile))
 		{
 			SerializeStatus = false;
 		}
@@ -152,11 +141,7 @@ bool FPlatformAgnosticChecker::SerializeBlueprintInfo(const UE4AssetData& AssetD
 
 	for (auto& OtherAsset: AssetData.OtherClasses)
 	{
-		if (!FSerializer::SerializeInt32(OtherAsset.Index, SerializeFile))
-		{
-			SerializeStatus = false;
-		}
-		if (!FSerializer::SerializeFString(OtherAsset.ClassName, SerializeFile))
+		if (!FSerializer::SerializeOtherAssetObject(OtherAsset, SerializeFile))
 		{
 			SerializeStatus = false;
 		}

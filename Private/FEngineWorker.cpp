@@ -1853,16 +1853,3 @@ bool FEngineWorker::AppInit()
 
 	return true;
 }
-
-bool FEngineWorker::LoadTargetPlatformManagerModule()
-{
-	ITargetPlatformManagerModule* Module = nullptr;
-	Module = FModuleManager::LoadModulePtr<ITargetPlatformManagerModule>("TargetPlatform");
-
-	if (Module)
-	{
-		return true;
-	}
-
-	return false;
-}
