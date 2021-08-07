@@ -14,11 +14,11 @@ public:
 	static bool Check(const TCHAR* BlueprintPath);
 
 	static bool SerializeBlueprintInfo(const UE4AssetData& AssetData, const FString& BlueprintFilename);
-#if RUN_WITH_TESTS
+#if COMPILE_TESTS
 	static void InitializeTestEnvironment(int Argc, char* Argv[]);
 #endif
 
-#if !RUN_WITH_TESTS
+#if !COMPILE_TESTS
 private:
 #endif
 	static bool CopyFileToContentDir(const TCHAR* BlueprintPath);

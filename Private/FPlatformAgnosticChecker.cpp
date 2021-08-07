@@ -33,7 +33,7 @@ void FPlatformAgnosticChecker::Exit()
 	FEngineWorker::Exit();
 }
 
-#if RUN_WITH_TESTS
+#if COMPILE_TESTS
 #include <gtest/gtest.h>
 void FPlatformAgnosticChecker::InitializeTestEnvironment(int Argc, char* Argv[])
 {

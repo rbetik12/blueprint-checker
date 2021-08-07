@@ -82,7 +82,6 @@ bool RunStdInMode()
 	while (IsRunning)
 	{
 		std::cin >> BlueprintPath;
-		
 		if (BlueprintPath == "Exit")
 		{
 			IsRunning = false;
