@@ -65,6 +65,8 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 	UObject* Object = LoadObject<UObject>(nullptr, *BlueprintInternalPath);
 	if (!Object)
 	{
+		TryCollectGarbage(RF_NoFlags, false);
+		std::wcerr << "Can't load object " << *BlueprintInternalPath << std::endl;
 		return false;
 	}
 	
@@ -94,6 +96,7 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 	
 	Object = nullptr;
 	TryCollectGarbage(RF_NoFlags, false);
+	std::wcout << "Successfully Loaded object " << *BlueprintInternalPath << std::endl;
 	return SerializeBlueprintInfo(AssetData, BlueprintFilename);
 }
 
@@ -106,6 +109,7 @@ bool FPlatformAgnosticChecker::SerializeBlueprintInfo(const UE4AssetData& AssetD
 	
 	if (SerializeFile == nullptr)
 	{
+		std::wcerr << "Can't open " << *DestFilePath << " for serialization" << std::endl;
 		return false;
 	}
 
@@ -148,6 +152,15 @@ bool FPlatformAgnosticChecker::SerializeBlueprintInfo(const UE4AssetData& AssetD
 	}
 
 	fclose(SerializeFile);
+
+	if (SerializeFile)
+	{
+		std::wcout << "Successfully serialized UAsset " << *BlueprintFilename << " to " << *DestFilePath << std::endl;
+	}
+	else
+	{
+		std::wcerr << "Can't serialize UAsset " << *BlueprintFilename << " to " << *DestFilePath << std::endl; 
+	}
 	
 	return SerializeStatus;
 }

@@ -1,8 +1,8 @@
 ﻿#pragma once
-#include "Misc/Paths.h"
 #ifdef COMPILE_TESTS
 #include <gtest/gtest.h>
 #include <fstream>
+#include "Misc/Paths.h"
 #include "FPlatformAgnosticChecker.h"
 #include "TestUtils.h"
 
@@ -50,6 +50,15 @@ TEST_F(FTests, CopyFilesTest)
 	{
 		const FString AbsoluteBlueprintPath = FPaths::ConvertRelativePathToFull(Path);
 		EXPECT_TRUE(FPlatformAgnosticChecker::CopyFileToContentDir(*AbsoluteBlueprintPath));
+	}
+}
+
+TEST_F(FTests, BlueprintParsingTest)
+{
+	for (auto& Path: UAssetFiles)
+	{
+		const FString AbsoluteBlueprintPath = FPaths::ConvertRelativePathToFull(Path);
+		EXPECT_TRUE(FPlatformAgnosticChecker::Check(*AbsoluteBlueprintPath));
 	}
 }
 

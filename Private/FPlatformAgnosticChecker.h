@@ -26,5 +26,6 @@ private:
 	static FString ConstructBlueprintInternalPath(const TCHAR* BlueprintPath);
 	static void ExtractGraphInfo(const TArray<UEdGraph*> Graph, UE4AssetData& AssetData);
 	static bool DeleteCopiedUAsset(const FString& BlueprintFilename);
+	
 	static bool bIsEngineInitialized;
 };
