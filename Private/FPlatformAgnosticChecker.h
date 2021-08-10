@@ -3,6 +3,7 @@
 #include "Engine/Blueprint.h"
 #include "HAL/Platform.h"
 #include "UEAssets/UE4AssetData.h"
+#include "UObject/ObjectResource.h"
 
 class FPlatformAgnosticChecker
 {
@@ -21,6 +22,9 @@ public:
 #if !COMPILE_TESTS
 private:
 #endif
+	static bool SerializeUAssetInfo(FLinkerLoad* UAssetLinker, const FString& BlueprintFilename);
+	static FILE* CreateSerializationFile(const FString& BlueprintFilename);
+	static bool SerializeExportMap(FLinkerLoad* UAssetLinker, FILE* File);
 	static bool CopyFileToContentDir(const TCHAR* BlueprintPath);
 	static bool ParseBlueprint(const FString& BlueprintInternalPath, const FString& BlueprintFilename);
 	static FString ConstructBlueprintInternalPath(const TCHAR* BlueprintPath);

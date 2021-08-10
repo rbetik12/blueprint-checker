@@ -7,3 +7,10 @@ int WINAPI WinMain( _In_ HINSTANCE HInInstance, _In_opt_ HINSTANCE HPrevInstance
 {
 	return 0;
 }
+
+#include "UObject/NameTypes.h"
+
+FNameEntryId::operator int32() const
+{
+	return 0;
+}

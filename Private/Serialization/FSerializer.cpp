@@ -32,6 +32,18 @@ bool FSerializer::SerializeInt32(const int Value, FILE* File)
 	return true;
 }
 
+bool FSerializer::SerializeInt64(const int64 Value, FILE* File)
+{
+	const int WriteAmount = fwrite(&Value, sizeof(Value), 1, File);
+
+	if (WriteAmount < 1)
+	{
+		return false;
+	}
+
+	return true;
+}
+
 bool FSerializer::SerializeBlueprintClassObject(const BlueprintClassObject& Obj, FILE* File)
 {
 	bool SerializeStatus = true;

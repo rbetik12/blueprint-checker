@@ -35,10 +35,29 @@ struct K2GraphNodeObject
 
 	static Kind GetKindByClassName(const FString& ClassName)
 	{
-		//TODO Implement getter
 		if (ClassName == "K2Node_CallFunction")
 		{
 			return Kind::FunctionCall;
+		}
+		if (ClassName == "K2Node_VariableSet")
+		{
+			return Kind::VariableSet;
+		}
+		if (ClassName == "K2Node_VariableGet")
+		{
+			return Kind::VariableGet;
+		}
+		if (ClassName == "K2Node_AddDelegate")
+		{
+			return Kind::AddDelegate;
+		}
+		if (ClassName == "K2Node_ClearDelegate")
+		{
+			return Kind::ClearDelegate;
+		}
+		if (ClassName == "K2Node_CallDelegate")
+		{
+			return Kind::CallDelegate;
 		}
 		return Kind::Other;
 	}

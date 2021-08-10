@@ -22,6 +22,7 @@ public class BlueprintChecker : ModuleRules {
 		PrivateIncludePaths.AddRange(new string[] {
 			"Runtime/Launch/Private",
 			"Runtime/CoreUObject/Private",
+			"Runtime/Core/Private",
 			Path.Combine(ModuleDirectory, "Private/ThirdParty")
 		});
 
