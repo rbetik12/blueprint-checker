@@ -9,7 +9,8 @@ public:
 	static bool SerializeInt32(const int32 Value, FILE* File);
 	static bool SerializeInt64(const int64 Value, FILE* File);
 
-	static bool SerializeBlueprintClassObject(const BlueprintClassObject& Obj, FILE* File);
-	static bool SerializeK2GraphNodeObject(const K2GraphNodeObject& Obj, FILE* File);
-	static bool SerializeOtherAssetObject(const OtherAssetObject& Obj, FILE* File);
+	static bool SerializeBlueprintClassObject(const FBlueprintClassObject& Obj, FILE* File);
+	static bool SerializeK2GraphNodeObject(const FK2GraphNodeObject& Obj, FILE* File);
+	static bool SerializeOtherAssetObject(const FOtherAssetObject& Obj, FILE* File);
+	static bool SerializeUAssetDataToJson(const FUE4AssetData& AssetData, FILE* File);
 };

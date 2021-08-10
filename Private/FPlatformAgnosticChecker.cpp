@@ -7,6 +7,7 @@
 #include "FEngineWorker.h"
 #include <EdGraph/EdGraph.h>
 
+#include "JsonObjectConverter.h"
 #include "K2Node.h"
 #include "Engine/Engine.h"
 #include "Serialization/FSerializer.h"
@@ -110,71 +111,6 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 	return Result;
 }
 
-bool FPlatformAgnosticChecker::SerializeBlueprintInfo(const UE4AssetData& AssetData, const FString& BlueprintFilename)
-{
-	const FString EngineContentDirPath(FPaths::EngineContentDir() + "_Temp/");
-	const FString DestFilePath = EngineContentDirPath + BlueprintFilename + ".dat";
-
-	FILE* SerializeFile = fopen(TCHAR_TO_UTF8(*DestFilePath), "wb");
-
-	if (SerializeFile == nullptr)
-	{
-		std::wcerr << "Can't open " << *DestFilePath << " for serialization" << std::endl;
-		return false;
-	}
-
-	bool SerializeStatus = true;
-
-	UE4AssetSerializedHeader Header;
-	Header.BlueprintClassesSize = AssetData.BlueprintClasses.size();
-	Header.OtherClassesSize = AssetData.OtherClasses.size();
-	Header.K2NodesSize = AssetData.K2VariableSets.size();
-
-	const int WriteAmount = fwrite(&Header, sizeof(Header), 1, SerializeFile);
-
-	if (WriteAmount < 1)
-	{
-		SerializeStatus = false;
-	}
-
-	for (auto& BlueprintClass : AssetData.BlueprintClasses)
-	{
-		if (!FSerializer::SerializeBlueprintClassObject(BlueprintClass, SerializeFile))
-		{
-			SerializeStatus = false;
-		}
-	}
-
-	for (auto& K2Node : AssetData.K2VariableSets)
-	{
-		if (!FSerializer::SerializeK2GraphNodeObject(K2Node, SerializeFile))
-		{
-			SerializeStatus = false;
-		}
-	}
-
-	for (auto& OtherAsset : AssetData.OtherClasses)
-	{
-		if (!FSerializer::SerializeOtherAssetObject(OtherAsset, SerializeFile))
-		{
-			SerializeStatus = false;
-		}
-	}
-
-	fclose(SerializeFile);
-
-	if (SerializeFile)
-	{
-		std::wcout << "Successfully serialized UAsset " << *BlueprintFilename << " to " << *DestFilePath << std::endl;
-	}
-	else
-	{
-		std::wcerr << "Can't serialize UAsset " << *BlueprintFilename << " to " << *DestFilePath << std::endl;
-	}
-
-	return SerializeStatus;
-}
-
 bool FPlatformAgnosticChecker::SerializeUAssetInfo(FLinkerLoad* UAssetLinker, const FString& BlueprintFilename)
 {
 	FILE* SerializationFile = CreateSerializationFile(BlueprintFilename);
@@ -208,9 +144,9 @@ FILE* FPlatformAgnosticChecker::CreateSerializationFile(const FString& Blueprint
 
 bool FPlatformAgnosticChecker::SerializeExportMap(FLinkerLoad* UAssetLinker, FILE* File)
 {
-	TArray<BlueprintClassObject> BlueprintClassObjects;
-	TArray<K2GraphNodeObject> K2GraphNodeObjects;
-	TArray<OtherAssetObject> OtherAssetObjects;
+	TArray<FBlueprintClassObject> BlueprintClassObjects;
+	TArray<FK2GraphNodeObject> K2GraphNodeObjects;
+	TArray<FOtherAssetObject> OtherAssetObjects;
 	FUEAssetReader Reader(UAssetLinker);
 
 	for (int Index = 0; Index < UAssetLinker->ExportMap.Num(); Index++)
@@ -220,14 +156,14 @@ bool FPlatformAgnosticChecker::SerializeExportMap(FLinkerLoad* UAssetLinker, FIL
 
 		if (ObjectExportSerialized.IsBlueprintGeneratedClass() && !ObjectExportSerialized.SuperClassName.IsEmpty())
 		{
-			BlueprintClassObjects.Add(BlueprintClassObject(Index, ObjectExportSerialized.ObjectName,
+			BlueprintClassObjects.Add(FBlueprintClassObject(Index, ObjectExportSerialized.ObjectName,
 			                                               ObjectExportSerialized.ClassName,
 			                                               ObjectExportSerialized.SuperClassName));
 		}
 		else
 		{
-			const K2GraphNodeObject::Kind Kind = K2GraphNodeObject::GetKindByClassName(ObjectExportSerialized.ClassName);
-			if (Kind != K2GraphNodeObject::Kind::Other)
+			const EKind Kind = FK2GraphNodeObject::GetKindByClassName(ObjectExportSerialized.ClassName);
+			if (Kind != EKind::Other)
 			{
 				if (ObjectExp.Object != nullptr)
 				{
@@ -236,17 +172,23 @@ bool FPlatformAgnosticChecker::SerializeExportMap(FLinkerLoad* UAssetLinker, FIL
 					if (Node)
 					{
 						FString MemberName = Node->GetName();
-						K2GraphNodeObjects.Add(K2GraphNodeObject(Index, Kind, MemberName));
+						K2GraphNodeObjects.Add(FK2GraphNodeObject(Index, Kind, MemberName));
 					}
 				}
 			}
 			else
 			{
-				OtherAssetObjects.Add(OtherAssetObject(Index, ObjectExportSerialized.ClassName));
+				OtherAssetObjects.Add(FOtherAssetObject(Index, ObjectExportSerialized.ClassName));
 			}
 		}
 	}
 
+	FUE4AssetData AssetData;
+	AssetData.BlueprintClasses = BlueprintClassObjects;
+	AssetData.OtherClasses = OtherAssetObjects;
+	AssetData.K2VariableSets = K2GraphNodeObjects;
+	
+	FSerializer::SerializeUAssetDataToJson(AssetData, File);
 	return true;
 }
 
@@ -254,28 +196,6 @@ FString FPlatformAgnosticChecker::ConstructBlueprintInternalPath(const TCHAR* Bl
 {
 	const FString BlueprintInternalPath = FString("/Engine/_Temp/") + FPaths::GetBaseFilename(BlueprintPath);
 	return BlueprintInternalPath;
-}
-
-void FPlatformAgnosticChecker::ExtractGraphInfo(const TArray<UEdGraph*> ExtractGraph, UE4AssetData& AssetData)
-{
-	for (const auto& Graph : ExtractGraph)
-	{
-		for (const auto& Node : Graph->Nodes)
-		{
-			K2GraphNodeObject::Kind Kind = K2GraphNodeObject::GetKindByClassName(Node->GetClass()->GetName());
-			if (Kind == K2GraphNodeObject::Kind::Other)
-			{
-				OtherAssetObject OtherAsset(0, Node->GetClass()->GetName());
-				AssetData.OtherClasses.push_back(OtherAsset);
-			}
-			else
-			{
-				FString MemberName = Node->GetName();
-				const K2GraphNodeObject K2Node(0, Kind, MemberName);
-				AssetData.K2VariableSets.push_back(K2Node);
-			}
-		}
-	}
 }
 
 bool FPlatformAgnosticChecker::DeleteCopiedUAsset(const FString& BlueprintFilename)

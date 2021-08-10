@@ -3,94 +3,142 @@
 #include <vector>
 
 #include "Containers/UnrealString.h"
+#include "UObject/ObjectMacros.h"
+#include "UObject/ScriptMacros.h"
 
-struct BlueprintClassObject
+#include "UE4AssetData.generated.h"
+
+USTRUCT()
+struct FBlueprintClassObject
 {
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY()
 	int Index;
+
+	UPROPERTY()
 	FString ObjectName;
+
+	UPROPERTY()
 	FString ClassName;
+
+	UPROPERTY()
 	FString SuperClassName;
 
-	BlueprintClassObject(const int Index, const FString ObjectName, const FString ClassName, const FString SuperClassName):
+	FBlueprintClassObject(const int Index, const FString ObjectName, const FString ClassName,
+	                      const FString SuperClassName):
+		Index(Index),
 		ObjectName(ObjectName),
 		ClassName(ClassName),
-		SuperClassName(SuperClassName),
-		Index(Index)
+		SuperClassName(SuperClassName)
+	{
+	}
+
+	FBlueprintClassObject(): Index(0)
 	{
 	}
 };
 
-struct K2GraphNodeObject
+UENUM()
+enum class EKind
 {
-	enum class Kind
-	{
-		VariableGet,
-		VariableSet,
-		FunctionCall,
-		AddDelegate,
-		ClearDelegate,
-		CallDelegate,
-		Other
-	};
+	VariableGet,
+	VariableSet,
+	FunctionCall,
+	AddDelegate,
+	ClearDelegate,
+	CallDelegate,
+	Other
+};
 
-	static Kind GetKindByClassName(const FString& ClassName)
+USTRUCT()
+struct FK2GraphNodeObject
+{
+	GENERATED_USTRUCT_BODY()
+
+	static EKind GetKindByClassName(const FString& ClassName)
 	{
 		if (ClassName == "K2Node_CallFunction")
 		{
-			return Kind::FunctionCall;
+			return EKind::FunctionCall;
 		}
 		if (ClassName == "K2Node_VariableSet")
 		{
-			return Kind::VariableSet;
+			return EKind::VariableSet;
 		}
 		if (ClassName == "K2Node_VariableGet")
 		{
-			return Kind::VariableGet;
+			return EKind::VariableGet;
 		}
 		if (ClassName == "K2Node_AddDelegate")
 		{
-			return Kind::AddDelegate;
+			return EKind::AddDelegate;
 		}
 		if (ClassName == "K2Node_ClearDelegate")
 		{
-			return Kind::ClearDelegate;
+			return EKind::ClearDelegate;
 		}
 		if (ClassName == "K2Node_CallDelegate")
 		{
-			return Kind::CallDelegate;
+			return EKind::CallDelegate;
 		}
-		return Kind::Other;
+		return EKind::Other;
 	}
 
+	UPROPERTY()
 	int Index;
-	Kind ObjectKind;
+
+	UPROPERTY()
+	EKind ObjectKind;
+
+	UPROPERTY()
 	FString MemberName;
 
-	K2GraphNodeObject(const int Index, const Kind ObjectKind, const FString MemberName):
+	FK2GraphNodeObject(const int Index, const EKind ObjectKind, const FString MemberName):
 		Index(Index),
 		ObjectKind(ObjectKind),
 		MemberName(MemberName)
 	{
 	}
-};
 
-struct OtherAssetObject
-{
-	int Index;
-	FString ClassName;
-
-	OtherAssetObject(const int Index, const FString ClassName):
-		Index(Index),
-		ClassName(ClassName)
+	FK2GraphNodeObject(): Index(0), ObjectKind(EKind::Other)
 	{
-		
 	}
 };
 
-class UE4AssetData
+USTRUCT()
+struct FOtherAssetObject
 {
-public:
-	std::vector<BlueprintClassObject> BlueprintClasses;
-	std::vector<K2GraphNodeObject> K2VariableSets;
-	std::vector<OtherAssetObject> OtherClasses;
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY()
+	int Index;
+
+	UPROPERTY()
+	FString ClassName;
+
+	FOtherAssetObject(const int Index, const FString ClassName):
+		Index(Index),
+		ClassName(ClassName)
+	{
+	}
+
+	FOtherAssetObject(): Index(0)
+	{
+	}
+};
+
+USTRUCT()
+struct FUE4AssetData
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY()
+	TArray<FBlueprintClassObject> BlueprintClasses;
+
+	UPROPERTY()
+	TArray<FK2GraphNodeObject> K2VariableSets;
+
+	UPROPERTY()
+	TArray<FOtherAssetObject> OtherClasses;
 };

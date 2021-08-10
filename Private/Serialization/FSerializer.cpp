@@ -1,5 +1,7 @@
 ﻿#include "FSerializer.h"
 
+#include "JsonObjectConverter.h"
+
 bool FSerializer::SerializeFString(const FString& String, FILE* File)
 {
 	const size_t StringSize = String.Len();
@@ -44,7 +46,7 @@ bool FSerializer::SerializeInt64(const int64 Value, FILE* File)
 	return true;
 }
 
-bool FSerializer::SerializeBlueprintClassObject(const BlueprintClassObject& Obj, FILE* File)
+bool FSerializer::SerializeBlueprintClassObject(const FBlueprintClassObject& Obj, FILE* File)
 {
 	bool SerializeStatus = true;
 	if (!SerializeInt32(Obj.Index, File))
@@ -67,7 +69,7 @@ bool FSerializer::SerializeBlueprintClassObject(const BlueprintClassObject& Obj,
 	return SerializeStatus;
 }
 
-bool FSerializer::SerializeK2GraphNodeObject(const K2GraphNodeObject& Obj, FILE* File)
+bool FSerializer::SerializeK2GraphNodeObject(const FK2GraphNodeObject& Obj, FILE* File)
 {
 	bool SerializeStatus = true;
 	if (!SerializeInt32(Obj.Index, File))
@@ -86,7 +88,7 @@ bool FSerializer::SerializeK2GraphNodeObject(const K2GraphNodeObject& Obj, FILE*
 	return SerializeStatus;
 }
 
-bool FSerializer::SerializeOtherAssetObject(const OtherAssetObject& Obj, FILE* File)
+bool FSerializer::SerializeOtherAssetObject(const FOtherAssetObject& Obj, FILE* File)
 {
 	bool SerializeStatus = true;
 	if (!SerializeInt32(Obj.Index, File))
@@ -99,4 +101,11 @@ bool FSerializer::SerializeOtherAssetObject(const OtherAssetObject& Obj, FILE* F
 	}
 
 	return SerializeStatus;
+}
+
+bool FSerializer::SerializeUAssetDataToJson(const FUE4AssetData& AssetData, FILE* File)
+{
+	FString JSONPayload;
+	FJsonObjectConverter::UStructToJsonObjectString(AssetData, JSONPayload, 0, 0);
+	return true;
 }

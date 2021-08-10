@@ -54,7 +54,9 @@ public class BlueprintChecker : ModuleRules {
 			"RHI",
 			"InputCore",
 			"Launch",
-			"GoogleTest"
+			"GoogleTest",
+			"Json",
+			"JsonUtilities"
 		});
 	}
 }

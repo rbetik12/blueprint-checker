@@ -13,8 +13,6 @@ public:
 	
 	// User provides absolute path to blueprint and we must convert it to engine-friendly path
 	static bool Check(const TCHAR* BlueprintPath);
-
-	static bool SerializeBlueprintInfo(const UE4AssetData& AssetData, const FString& BlueprintFilename);
 #if COMPILE_TESTS
 	static void InitializeTestEnvironment(int Argc, char* Argv[]);
 #endif
@@ -28,7 +26,6 @@ private:
 	static bool CopyFileToContentDir(const TCHAR* BlueprintPath);
 	static bool ParseBlueprint(const FString& BlueprintInternalPath, const FString& BlueprintFilename);
 	static FString ConstructBlueprintInternalPath(const TCHAR* BlueprintPath);
-	static void ExtractGraphInfo(const TArray<UEdGraph*> Graph, UE4AssetData& AssetData);
 	static bool DeleteCopiedUAsset(const FString& BlueprintFilename);
 	
 	static bool bIsEngineInitialized;
