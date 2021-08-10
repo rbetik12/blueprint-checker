@@ -76,30 +76,6 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 		return false;
 	}
 
-	// UE4AssetData AssetData;
-	// if (Object->GetClass() == UBlueprint::StaticClass())
-	// {
-	// 	const UBlueprint* Blueprint = Cast<UBlueprint>(Object);
-	// 	const FString ParentClassName = Blueprint->ParentClass ? Blueprint->ParentClass->GetName() : FString();
-	// 	const FString ObjectName = Blueprint->GetName();
-	// 	const FString ClassName = Blueprint->GetClass()->GetName();
-	//
-	// 	const BlueprintClassObject BPClassObject(0, ObjectName, ClassName, ParentClassName);
-	// 	AssetData.BlueprintClasses.push_back(BPClassObject);
-	//
-	// 	ExtractGraphInfo(Blueprint->UbergraphPages, AssetData);
-	// 	ExtractGraphInfo(Blueprint->FunctionGraphs, AssetData);
-	// 	ExtractGraphInfo(Blueprint->DelegateSignatureGraphs, AssetData);
-	// 	ExtractGraphInfo(Blueprint->MacroGraphs, AssetData);
-	// 	ExtractGraphInfo(Blueprint->IntermediateGeneratedGraphs, AssetData);
-	// 	ExtractGraphInfo(Blueprint->EventGraphs, AssetData);
-	// }
-	// else
-	// {
-	// 	OtherAssetObject OtherAsset(0, Object->GetClass()->GetName());
-	// 	AssetData.OtherClasses.push_back(OtherAsset);
-	// }
-
 	auto LoadContext = FUObjectThreadContext::Get().GetSerializeContext();
 	FLinkerLoad* Linker = GetPackageLinker(nullptr, *BlueprintInternalPath, 0x0, nullptr,
 	                                       nullptr, nullptr, &LoadContext, nullptr, nullptr);
@@ -113,36 +89,33 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 
 bool FPlatformAgnosticChecker::SerializeUAssetInfo(FLinkerLoad* UAssetLinker, const FString& BlueprintFilename)
 {
-	FILE* SerializationFile = CreateSerializationFile(BlueprintFilename);
-
-	if (SerializationFile == nullptr)
+	TUniquePtr<std::wofstream> SerializationFileStream; 
+	if (!CreateSerializationFile(BlueprintFilename, SerializationFileStream))
 	{
 		return false;
 	}
-
-	const bool ExportSerializeResult = SerializeExportMap(UAssetLinker, SerializationFile);
-
-	fclose(SerializationFile);
+	
+	const bool ExportSerializeResult = SerializeExportMap(UAssetLinker, SerializationFileStream);
 
 	return ExportSerializeResult;
 }
 
-FILE* FPlatformAgnosticChecker::CreateSerializationFile(const FString& BlueprintFilename)
+bool FPlatformAgnosticChecker::CreateSerializationFile(const FString& BlueprintFilename, TUniquePtr<std::wofstream>& FilePtr)
 {
 	const FString EngineContentDirPath(FPaths::EngineContentDir() + "_Temp/");
-	const FString DestFilePath = EngineContentDirPath + BlueprintFilename + ".dat";
+	const FString DestFilePath = EngineContentDirPath + BlueprintFilename + ".json";
 
-	FILE* SerializeFile = fopen(TCHAR_TO_UTF8(*DestFilePath), "wb");
+	FilePtr = MakeUnique<std::wofstream>(*DestFilePath);
 
-	if (SerializeFile == nullptr)
+	if (!FilePtr->is_open())
 	{
 		std::wcerr << "Can't open " << *DestFilePath << " for serialization" << std::endl;
+		return false;
 	}
-
-	return SerializeFile;
+	return true;
 }
 
-bool FPlatformAgnosticChecker::SerializeExportMap(FLinkerLoad* UAssetLinker, FILE* File)
+bool FPlatformAgnosticChecker::SerializeExportMap(FLinkerLoad* UAssetLinker, TUniquePtr<std::wofstream>& FilePtr)
 {
 	TArray<FBlueprintClassObject> BlueprintClassObjects;
 	TArray<FK2GraphNodeObject> K2GraphNodeObjects;
@@ -157,8 +130,8 @@ bool FPlatformAgnosticChecker::SerializeExportMap(FLinkerLoad* UAssetLinker, FIL
 		if (ObjectExportSerialized.IsBlueprintGeneratedClass() && !ObjectExportSerialized.SuperClassName.IsEmpty())
 		{
 			BlueprintClassObjects.Add(FBlueprintClassObject(Index, ObjectExportSerialized.ObjectName,
-			                                               ObjectExportSerialized.ClassName,
-			                                               ObjectExportSerialized.SuperClassName));
+			                                                ObjectExportSerialized.ClassName,
+			                                                ObjectExportSerialized.SuperClassName));
 		}
 		else
 		{
@@ -187,9 +160,8 @@ bool FPlatformAgnosticChecker::SerializeExportMap(FLinkerLoad* UAssetLinker, FIL
 	AssetData.BlueprintClasses = BlueprintClassObjects;
 	AssetData.OtherClasses = OtherAssetObjects;
 	AssetData.K2VariableSets = K2GraphNodeObjects;
-	
-	FSerializer::SerializeUAssetDataToJson(AssetData, File);
-	return true;
+
+	return FSerializer::SerializeUAssetDataToJson(AssetData, FilePtr);
 }
 
 FString FPlatformAgnosticChecker::ConstructBlueprintInternalPath(const TCHAR* BlueprintPath)

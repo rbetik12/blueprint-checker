@@ -103,9 +103,11 @@ bool FSerializer::SerializeOtherAssetObject(const FOtherAssetObject& Obj, FILE* 
 	return SerializeStatus;
 }
 
-bool FSerializer::SerializeUAssetDataToJson(const FUE4AssetData& AssetData, FILE* File)
+bool FSerializer::SerializeUAssetDataToJson(const FUE4AssetData& AssetData, const TUniquePtr<std::wofstream>& FilePtr)
 {
 	FString JSONPayload;
 	FJsonObjectConverter::UStructToJsonObjectString(AssetData, JSONPayload, 0, 0);
+
+	*FilePtr.Get() << *JSONPayload;
 	return true;
 }

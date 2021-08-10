@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <fstream>
 #include "Containers/UnrealString.h"
 #include "UEAssets/UE4AssetData.h"
 
@@ -12,5 +13,5 @@ public:
 	static bool SerializeBlueprintClassObject(const FBlueprintClassObject& Obj, FILE* File);
 	static bool SerializeK2GraphNodeObject(const FK2GraphNodeObject& Obj, FILE* File);
 	static bool SerializeOtherAssetObject(const FOtherAssetObject& Obj, FILE* File);
-	static bool SerializeUAssetDataToJson(const FUE4AssetData& AssetData, FILE* File);
+	static bool SerializeUAssetDataToJson(const FUE4AssetData& AssetData, const TUniquePtr<std::wofstream>& FilePtr);
 };

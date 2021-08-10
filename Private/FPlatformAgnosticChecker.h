@@ -1,8 +1,7 @@
 ﻿#pragma once
+#include <fstream>
 #include "Containers/UnrealString.h"
-#include "Engine/Blueprint.h"
 #include "HAL/Platform.h"
-#include "UEAssets/UE4AssetData.h"
 #include "UObject/ObjectResource.h"
 
 class FPlatformAgnosticChecker
@@ -21,8 +20,8 @@ public:
 private:
 #endif
 	static bool SerializeUAssetInfo(FLinkerLoad* UAssetLinker, const FString& BlueprintFilename);
-	static FILE* CreateSerializationFile(const FString& BlueprintFilename);
-	static bool SerializeExportMap(FLinkerLoad* UAssetLinker, FILE* File);
+	static bool CreateSerializationFile(const FString& BlueprintFilename, TUniquePtr<std::wofstream>& FilePtr);
+	static bool SerializeExportMap(FLinkerLoad* UAssetLinker, TUniquePtr<std::wofstream>& FilePtr);
 	static bool CopyFileToContentDir(const TCHAR* BlueprintPath);
 	static bool ParseBlueprint(const FString& BlueprintInternalPath, const FString& BlueprintFilename);
 	static FString ConstructBlueprintInternalPath(const TCHAR* BlueprintPath);
