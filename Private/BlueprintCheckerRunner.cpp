@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 
+//TODO get rid of stl
+
 bool ParseBlueprint(const std::string& BlueprintFilepathStr)
 {
 	const size_t ArgStrLen = strlen(BlueprintFilepathStr.c_str());

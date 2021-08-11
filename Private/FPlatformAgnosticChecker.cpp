@@ -2,18 +2,15 @@
 #include "Containers/UnrealString.h"
 #include "Misc/Paths.h"
 #include "HAL/FileManager.h"
-#include <iostream>
-#include <stdio.h>
 #include "FEngineWorker.h"
-#include <EdGraph/EdGraph.h>
-
 #include "JsonObjectConverter.h"
 #include "K2Node.h"
 #include "Engine/Engine.h"
 #include "Serialization/FSerializer.h"
 #include "UEAssets/FUEAssetReader.h"
-#include "UEAssets/UE4AssetSerializedHeader.h"
 #include "UObject/LinkerLoad.h"
+
+DECLARE_LOG_CATEGORY_CLASS(LogPlatformAgnosticChecker, Log, All);
 
 bool FPlatformAgnosticChecker::Check(const TCHAR* BlueprintPath)
 {
@@ -58,11 +55,11 @@ bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 
 	if (CopyResult != COPY_OK)
 	{
-		std::wcerr << "Can't copy file from " << BlueprintPath << " to " << *DestFilePath << std::endl;
+		UE_LOG(LogPlatformAgnosticChecker, Error, TEXT("Can't copy file from %s to %s"), BlueprintPath, *DestFilePath);
 		return false;
 	}
-
-	std::wcout << "Successfully copied file from " << BlueprintPath << " to " << *DestFilePath << std::endl;
+	
+	UE_LOG(LogPlatformAgnosticChecker, Display, TEXT("Successfully copied file from %s to %s"), BlueprintPath, *DestFilePath);
 	return true;
 }
 
@@ -72,15 +69,15 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 	if (!Object)
 	{
 		TryCollectGarbage(RF_NoFlags, false);
-		std::wcerr << "Can't load object " << *BlueprintInternalPath << std::endl;
+		UE_LOG(LogPlatformAgnosticChecker, Error, TEXT("Can't load object %s"), *BlueprintInternalPath);
 		return false;
 	}
 
 	auto LoadContext = FUObjectThreadContext::Get().GetSerializeContext();
 	FLinkerLoad* Linker = GetPackageLinker(nullptr, *BlueprintInternalPath, 0x0, nullptr,
 	                                       nullptr, nullptr, &LoadContext, nullptr, nullptr);
-
-	std::wcout << "Successfully Loaded object " << *BlueprintInternalPath << std::endl;
+	
+	UE_LOG(LogPlatformAgnosticChecker, Display, TEXT("Successfully Loaded object %s"), *BlueprintInternalPath);
 	const bool Result = SerializeUAssetInfo(Linker, BlueprintFilename);
 	Object = nullptr;
 	TryCollectGarbage(RF_NoFlags, false);
@@ -109,7 +106,7 @@ bool FPlatformAgnosticChecker::CreateSerializationFile(const FString& BlueprintF
 
 	if (!FilePtr->is_open())
 	{
-		std::wcerr << "Can't open " << *DestFilePath << " for serialization" << std::endl;
+		UE_LOG(LogPlatformAgnosticChecker, Error, TEXT("Can't open %s for serialization"), *DestFilePath);
 		return false;
 	}
 	return true;
@@ -144,7 +141,7 @@ bool FPlatformAgnosticChecker::SerializeExportMap(FLinkerLoad* UAssetLinker, TUn
 
 					if (Node)
 					{
-						FString MemberName = Node->GetName();
+						FString MemberName = Node->GetNodeTitle(ENodeTitleType::FullTitle).ToString();
 						K2GraphNodeObjects.Add(FK2GraphNodeObject(Index, Kind, MemberName));
 					}
 				}

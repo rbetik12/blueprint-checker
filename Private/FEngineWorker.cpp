@@ -28,7 +28,7 @@ void FEngineWorker::PreStartupScreen()
 	GEngineLoop.PreInitPreStartupScreen(TEXT(""));
 #else
 	// Console flags that tells prevent initialization of rendering system
-	const TCHAR* CmdLine = TEXT("-nullrhi -NoShaderCompile");
+	const TCHAR* CmdLine = TEXT("-nullrhi -NoShaderCompile -stdout");
 	
 	if (GLog != nullptr)
 	{
@@ -1457,6 +1457,13 @@ void FEngineWorker::PostStartupScreen()
 			UE_LOG(LogInit, Log, TEXT("Initializing Game Engine Completed"));
 		}
 	}
+	GEngine->Exec(nullptr, TEXT("log LogLinker off"));
+	GEngine->Exec(nullptr, TEXT("log LogTargetPlatformManager off"));
+	GEngine->Exec(nullptr, TEXT("log LogHAL off"));
+	GEngine->Exec(nullptr, TEXT("log LogAudioMixer off"));
+	GEngine->Exec(nullptr, TEXT("log LogWindowsTextInputMethodSystem off"));
+	GEngine->Exec(nullptr, TEXT("log LogBlueprint off"));
+	GEngine->Exec(nullptr, TEXT("log LogAudio off"));
 }
 
 bool FEngineWorker::AppInit()
