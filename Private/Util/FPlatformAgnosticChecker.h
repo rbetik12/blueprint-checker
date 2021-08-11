@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include <fstream>
 #include "Containers/UnrealString.h"
 #include "HAL/Platform.h"
 #include "UObject/ObjectResource.h"
@@ -20,12 +19,10 @@ public:
 private:
 #endif
 	static bool SerializeUAssetInfo(FLinkerLoad* UAssetLinker, const FString& BlueprintFilename);
-	static bool CreateSerializationFile(const FString& BlueprintFilename, TUniquePtr<std::wofstream>& FilePtr);
-	static bool SerializeExportMap(FLinkerLoad* UAssetLinker, TUniquePtr<std::wofstream>& FilePtr);
 	static bool CopyFileToContentDir(const TCHAR* BlueprintPath);
 	static bool ParseBlueprint(const FString& BlueprintInternalPath, const FString& BlueprintFilename);
-	static FString ConstructBlueprintInternalPath(const TCHAR* BlueprintPath);
 	static bool DeleteCopiedUAsset(const FString& BlueprintFilename);
+	static FString ConstructBlueprintInternalPath(const TCHAR* BlueprintPath);
 	
 	static bool bIsEngineInitialized;
 };

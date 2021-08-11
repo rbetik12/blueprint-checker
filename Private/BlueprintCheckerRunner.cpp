@@ -1,5 +1,5 @@
 ﻿#include "BlueprintChecker.h"
-#include "FPlatformAgnosticChecker.h"
+#include "Util/FPlatformAgnosticChecker.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -13,11 +13,11 @@ bool ParseBlueprint(const std::string& BlueprintFilepathStr)
 	const bool Result = FPlatformAgnosticChecker::Check(*BlueprintPathStr);
 	if (Result)
 	{
-		UE_LOG(LogBlueprintCheckerRunner, Display, TEXT("Parsed successfully. File: %s"), BlueprintFilepathStr.c_str());
+		UE_LOG(LogBlueprintCheckerRunner, Display, TEXT("Parsed successfully. File: %s"), *BlueprintPathStr);
 	}
 	else
 	{
-		UE_LOG(LogBlueprintCheckerRunner, Error, TEXT("Failed to parse. File: %s"), BlueprintFilepathStr.c_str());
+		UE_LOG(LogBlueprintCheckerRunner, Error, TEXT("Failed to parse. File: %s"), *BlueprintPathStr);
 	}
 
 	return Result;

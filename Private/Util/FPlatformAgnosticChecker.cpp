@@ -6,8 +6,7 @@
 #include "JsonObjectConverter.h"
 #include "K2Node.h"
 #include "Engine/Engine.h"
-#include "Serialization/FSerializer.h"
-#include "UEAssets/FUEAssetReader.h"
+#include "Serialization//IUEAseetSerializer.h"
 #include "UObject/LinkerLoad.h"
 
 DECLARE_LOG_CATEGORY_CLASS(LogPlatformAgnosticChecker, Log, All);
@@ -86,79 +85,9 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 
 bool FPlatformAgnosticChecker::SerializeUAssetInfo(FLinkerLoad* UAssetLinker, const FString& BlueprintFilename)
 {
-	TUniquePtr<std::wofstream> SerializationFileStream; 
-	if (!CreateSerializationFile(BlueprintFilename, SerializationFileStream))
-	{
-		return false;
-	}
+	IUEAssetSerializer* Serializer = IUEAssetSerializer::Create(UAssetLinker, BlueprintFilename);
 	
-	const bool ExportSerializeResult = SerializeExportMap(UAssetLinker, SerializationFileStream);
-
-	return ExportSerializeResult;
-}
-
-bool FPlatformAgnosticChecker::CreateSerializationFile(const FString& BlueprintFilename, TUniquePtr<std::wofstream>& FilePtr)
-{
-	const FString EngineContentDirPath(FPaths::EngineContentDir() + "_Temp/");
-	const FString DestFilePath = EngineContentDirPath + BlueprintFilename + ".json";
-
-	FilePtr = MakeUnique<std::wofstream>(*DestFilePath);
-
-	if (!FilePtr->is_open())
-	{
-		UE_LOG(LogPlatformAgnosticChecker, Error, TEXT("Can't open %s for serialization"), *DestFilePath);
-		return false;
-	}
-	return true;
-}
-
-bool FPlatformAgnosticChecker::SerializeExportMap(FLinkerLoad* UAssetLinker, TUniquePtr<std::wofstream>& FilePtr)
-{
-	TArray<FBlueprintClassObject> BlueprintClassObjects;
-	TArray<FK2GraphNodeObject> K2GraphNodeObjects;
-	TArray<FOtherAssetObject> OtherAssetObjects;
-	FUEAssetReader Reader(UAssetLinker);
-
-	for (int Index = 0; Index < UAssetLinker->ExportMap.Num(); Index++)
-	{
-		auto& ObjectExp = UAssetLinker->ExportMap[Index];
-		FObjectExportSerialized ObjectExportSerialized = Reader.ReadObjectExport(ObjectExp, Index);
-
-		if (ObjectExportSerialized.IsBlueprintGeneratedClass() && !ObjectExportSerialized.SuperClassName.IsEmpty())
-		{
-			BlueprintClassObjects.Add(FBlueprintClassObject(Index, ObjectExportSerialized.ObjectName,
-			                                                ObjectExportSerialized.ClassName,
-			                                                ObjectExportSerialized.SuperClassName));
-		}
-		else
-		{
-			const EKind Kind = FK2GraphNodeObject::GetKindByClassName(ObjectExportSerialized.ClassName);
-			if (Kind != EKind::Other)
-			{
-				if (ObjectExp.Object != nullptr)
-				{
-					const UK2Node* Node = static_cast<UK2Node*>(ObjectExp.Object);
-
-					if (Node)
-					{
-						FString MemberName = Node->GetNodeTitle(ENodeTitleType::FullTitle).ToString();
-						K2GraphNodeObjects.Add(FK2GraphNodeObject(Index, Kind, MemberName));
-					}
-				}
-			}
-			else
-			{
-				OtherAssetObjects.Add(FOtherAssetObject(Index, ObjectExportSerialized.ClassName));
-			}
-		}
-	}
-
-	FUE4AssetData AssetData;
-	AssetData.BlueprintClasses = BlueprintClassObjects;
-	AssetData.OtherClasses = OtherAssetObjects;
-	AssetData.K2VariableSets = K2GraphNodeObjects;
-
-	return FSerializer::SerializeUAssetDataToJson(AssetData, FilePtr);
+	return Serializer->Serialize();
 }
 
 FString FPlatformAgnosticChecker::ConstructBlueprintInternalPath(const TCHAR* BlueprintPath)

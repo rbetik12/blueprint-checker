@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 #include <fstream>
 #include "Misc/Paths.h"
-#include "FPlatformAgnosticChecker.h"
+#include "Util/FPlatformAgnosticChecker.h"
 #include "TestUtils.h"
 
 class FTests : public ::testing::Test
