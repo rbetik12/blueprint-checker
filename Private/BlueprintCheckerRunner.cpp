@@ -1,9 +1,10 @@
 ﻿#include "BlueprintChecker.h"
 #include "FPlatformAgnosticChecker.h"
+#include <vector>
 #include <iostream>
 #include <fstream>
 
-//TODO get rid of stl
+DECLARE_LOG_CATEGORY_CLASS(LogBlueprintCheckerRunner, Log, All);
 
 bool ParseBlueprint(const std::string& BlueprintFilepathStr)
 {
@@ -12,11 +13,11 @@ bool ParseBlueprint(const std::string& BlueprintFilepathStr)
 	const bool Result = FPlatformAgnosticChecker::Check(*BlueprintPathStr);
 	if (Result)
 	{
-		std::wcout << "Parsed successfully!" << std::endl;
+		UE_LOG(LogBlueprintCheckerRunner, Display, TEXT("Parsed successfully. File: %s"), BlueprintFilepathStr.c_str());
 	}
 	else
 	{
-		std::wcout << "Failed to parse!" << std::endl;
+		UE_LOG(LogBlueprintCheckerRunner, Error, TEXT("Failed to parse. File: %s"), BlueprintFilepathStr.c_str());
 	}
 
 	return Result;
@@ -28,7 +29,7 @@ bool RunSingleMode(const std::string& PathToBlueprintFileStr)
 	const bool Result = ParseBlueprint(PathToBlueprintFileStr);
 	if (!Result)
 	{
-		std::cerr << "Can't serialize blueprint" << std::endl;
+		UE_LOG(LogBlueprintCheckerRunner, Error, TEXT("Failed to parse. File: %s"),PathToBlueprintFileStr.c_str());
 	}
 	FPlatformAgnosticChecker::Exit();
 
