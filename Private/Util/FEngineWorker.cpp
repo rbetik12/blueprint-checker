@@ -1,25 +1,20 @@
 ﻿#include "FEngineWorker.h"
 #include "RequiredProgramMainCPPInclude.h"
+#include "Serialization/IUEAseetSerializer.h"
 
-#include <memory>
-#include <thread>
-
-#define mcheck(X)
-
-#define ERROR std::cout << "Error: " << __FILE__ << " " << __LINE__ << std::endl; \
+#define ERROR_ std::cout << "Error: " << __FILE__ << " " << __LINE__ << std::endl; \
 			exit(EXIT_FAILURE);
 
 void FEngineWorker::Init()
 {
 	PreStartupScreen();
 	PostStartupScreen();
-	std::cout << "Successfully initialized engine!" << std::endl;
+	std::wcout << *IUEAssetSerializer::Directory << std::endl;
 }
 
 void FEngineWorker::Exit()
 {
 	GEngineLoop.Exit();
-	std::cout << "Successfully destroyed engine!" << std::endl;
 }
 
 void FEngineWorker::PreStartupScreen()
@@ -60,8 +55,7 @@ void FEngineWorker::PreStartupScreen()
 	{
 		FPlatformMisc::SetUTF8Output();
 	}
-
-	mcheck(GConfig);
+	
 	// Switch into executable's directory.
 	FPlatformProcess::SetCurrentWorkingDirectoryToBaseDir();
 
@@ -70,7 +64,7 @@ void FEngineWorker::PreStartupScreen()
 	if (!FCommandLine::Set(CmdLine))
 	{
 		// Fail, shipping builds will crash if setting command line fails
-		ERROR
+		ERROR_
 	}
 
 	GWarn = FPlatformApplicationMisc::GetFeedbackContext();
@@ -101,8 +95,7 @@ void FEngineWorker::PreStartupScreen()
 #endif
 	}
 	LLM_SCOPE(ELLMTag::EnginePreInitMemory);
-
-	mcheck(GConfig);
+	
 	{
 		SCOPED_BOOT_TIMING("InitTaggedStorage");
 		FPlatformMisc::InitTaggedStorage(1024);
@@ -128,10 +121,6 @@ void FEngineWorker::PreStartupScreen()
 	// Create the stats malloc profiler proxy.
 	if (FStatsMallocProfilerProxy::HasMemoryProfilerToken())
 	{
-		if (PLATFORM_USES_FIXED_GMalloc_CLASS)
-		{
-			UE_LOG(LogMemory, Fatal, TEXT("Cannot do malloc profiling with PLATFORM_USES_FIXED_GMalloc_CLASS."));
-		}
 		// Assumes no concurrency here.
 		GMalloc = FStatsMallocProfilerProxy::Get();
 	}
@@ -140,7 +129,6 @@ void FEngineWorker::PreStartupScreen()
 	// Name of project file before normalization (as specified in command line).
 	// Used to fixup project name if necessary.
 	FString GameProjectFilePathUnnormalized;
-	mcheck(GConfig);
 	{
 		SCOPED_BOOT_TIMING("LaunchSetGameName");
 
@@ -148,10 +136,9 @@ void FEngineWorker::PreStartupScreen()
 		if (LaunchSetGameName(CmdLine, GameProjectFilePathUnnormalized) == false)
 		{
 			// If it failed, do not continue
-			ERROR
+			ERROR_
 		}
 	}
-	mcheck(GConfig);
 #if WITH_APPLICATION_CORE
 	{
 		SCOPED_BOOT_TIMING("CreateConsoleOutputDevice");
@@ -202,7 +189,6 @@ void FEngineWorker::PreStartupScreen()
 		EnableEmitDrawEventsOnlyOnCommandlist();
 	}
 #endif // RHI_COMMAND_LIST_DEBUG_TRACES
-	mcheck(GConfig);
 	// Switch into executable's directory (may be required by some of the platform file overrides)
 	FPlatformProcess::SetCurrentWorkingDirectoryToBaseDir();
 
@@ -282,14 +268,13 @@ void FEngineWorker::PreStartupScreen()
 		if (LaunchCheckForFileOverride(CmdLine, bFileOverrideFound) == false)
 		{
 			// if it failed, we cannot continue
-			ERROR
+			ERROR_
 		}
 	}
 
 	// 
 #if PLATFORM_DESKTOP && !IS_MONOLITHIC
 #endif
-	mcheck(GConfig);
 	// Initialize file manager
 	{
 		SCOPED_BOOT_TIMING("IFileManager::Get().ProcessCommandLineOptions");
@@ -314,7 +299,7 @@ void FEngineWorker::PreStartupScreen()
 			// The engine MUST be launched with <GameName>Game.
 			const FText GameNameText = FText::FromString(FApp::GetProjectName());
 			// FMessageDialog::Open(EAppMsgType::Ok, FText::Format(LOCTEXT("RequiresGamePrefix", "Error: UE4Editor does not append 'Game' to the passed in game name.\nYou must use the full name.\nYou specified '{0}', use '{0}Game'."), GameNameText));
-			ERROR
+			ERROR_
 		}
 	}
 
@@ -370,8 +355,7 @@ void FEngineWorker::PreStartupScreen()
 	}
 
 #endif // WITH_ENGINE
-
-	mcheck(GConfig);
+	
 	// trim any whitespace at edges of string - this can happen if the token was quoted with leading or trailing whitespace
 	// VC++ tends to do this in its "external tools" config
 	Token.TrimStartAndEndInline();
@@ -419,7 +403,6 @@ void FEngineWorker::PreStartupScreen()
 			}
 		}
 	}
-	mcheck(GConfig);
 	// look early for the editor token
 	bool bHasEditorToken = false;
 
@@ -436,7 +419,6 @@ void FEngineWorker::PreStartupScreen()
 	const bool bFirstTokenIsGame = (Token == TEXT("-GAME"));
 	const bool bFirstTokenIsServer = (Token == TEXT("-SERVER"));
 	const bool bFirstTokenIsModeOverride = bFirstTokenIsGame || bFirstTokenIsServer || bHasCommandletToken;
-	const TCHAR* CommandletCommandLine = nullptr;
 	if (bFirstTokenIsModeOverride)
 	{
 		bIsNotEditor = true;
@@ -465,7 +447,6 @@ void FEngineWorker::PreStartupScreen()
 					Token += TEXT("Commandlet");
 				}
 			}
-			CommandletCommandLine = ParsedCmdLine;
 		}
 	}
 
@@ -576,7 +557,7 @@ void FEngineWorker::PreStartupScreen()
 
 		UE_LOG(LogInit, Verbose, TEXT("RandInit(%d) SRandInit(%d)."), Seed1, Seed2);
 	}
-	mcheck(GConfig);
+	
 #if !IS_PROGRAM
 	if (!GIsGameAgnosticExe && FApp::HasProjectName() && !FPaths::IsProjectFilePathSet())
 	{
@@ -603,7 +584,7 @@ void FEngineWorker::PreStartupScreen()
 		{
 			// The project file was invalid or saved with a newer version of the engine. Exit.
 			UE_LOG(LogInit, Warning, TEXT("Could not find a valid project file, the engine will exit now."));
-			ERROR
+			ERROR_
 		}
 
 		if (IProjectManager::Get().IsEnterpriseProject() && FPaths::DirectoryExists(FPaths::EnterpriseDir()))
@@ -614,7 +595,6 @@ void FEngineWorker::PreStartupScreen()
 				                 FPlatformProcess::GetBinariesSubdirectory()), false);
 		}
 	}
-	mcheck(GConfig);
 #if !IS_PROGRAM
 	// Fix the project file path case before we attempt to fix the game name
 	LaunchFixProjectPathCase();
@@ -661,19 +641,16 @@ void FEngineWorker::PreStartupScreen()
 		if (!GEngineLoop.LoadCoreModules())
 		{
 			UE_LOG(LogInit, Error, TEXT("Failed to load Core modules."));
-			ERROR
+			ERROR_
 		}
 	}
-	mcheck(GConfig);
 	const bool bDumpEarlyConfigReads = FParse::Param(FCommandLine::Get(), TEXT("DumpEarlyConfigReads"));
 	const bool bDumpEarlyPakFileReads = FParse::Param(FCommandLine::Get(), TEXT("DumpEarlyPakFileReads"));
-	const bool bForceQuitAfterEarlyReads = FParse::Param(FCommandLine::Get(), TEXT("ForceQuitAfterEarlyReads"));
 
 	// Overly verbose to avoid a dumb static analysis warning
 #if WITH_CONFIG_PATCHING
 	constexpr bool bWithConfigPatching = true;
 #else
-	constexpr bool bWithConfigPatching = false;
 #endif
 
 	if (bDumpEarlyConfigReads)
@@ -703,7 +680,7 @@ void FEngineWorker::PreStartupScreen()
 			FMessageDialog::Open(EAppMsgType::Ok,
 			                     NSLOCTEXT("Engine", "UE4RequiresProjectFiles",
 			                               "UE4 games require a project file as the first parameter."));
-			ERROR
+			ERROR_
 		}
 	}
 
@@ -794,22 +771,16 @@ void FEngineWorker::PreStartupScreen()
 #if WITH_ENGINE
 	AppLifetimeEventCapture::Init();
 #endif
-
-#if WITH_ENGINE && TRACING_PROFILER
-	PRAGMA_DISABLE_DEPRECATION_WARNINGS
-	FTracingProfiler::Get()->Init();
-	PRAGMA_ENABLE_DEPRECATION_WARNINGS
-#endif
-	mcheck(GConfig)
+	
 	// Start the application
 	{
 		SCOPED_BOOT_TIMING("AppInit");
 		if (!AppInit())
 		{
-			ERROR
+			ERROR_
 		}
 	}
-	mcheck(GConfig)
+	
 	if (FPlatformProcess::SupportsMultithreading())
 	{
 		{
@@ -1024,7 +995,7 @@ void FEngineWorker::PreStartupScreen()
 			if (TargetPlatformManager && TargetPlatformManager->HasInitErrors(&InitErrors))
 			{
 				RequestEngineExit(InitErrors);
-				ERROR
+				ERROR_
 			}
 		}
 	}
@@ -1042,7 +1013,7 @@ void FEngineWorker::PreStartupScreen()
 		if (!InitGamePhys())
 		{
 			// If we failed to initialize physics we cannot continue.
-			ERROR
+			ERROR_
 		}
 	}
 
@@ -1240,7 +1211,7 @@ void FEngineWorker::PreStartupScreen()
 			if (IsEngineExitRequested())
 			{
 				// This means we can't continue without the global shader map.
-				ERROR
+				ERROR_
 			}
 		}
 		else if (FPlatformProperties::RequiresCookedData() == false)
