@@ -6,26 +6,22 @@
 #include "JsonObjectConverter.h"
 #include "K2Node.h"
 #include "Engine/Engine.h"
-#include "Serialization//IUEAseetSerializer.h"
+#include "Serialization/IUEAseetSerializer.h"
 #include "UObject/LinkerLoad.h"
 
 DECLARE_LOG_CATEGORY_CLASS(LogPlatformAgnosticChecker, Log, All);
 
 bool FPlatformAgnosticChecker::Check(const TCHAR* BlueprintPath)
 {
-	if (CopyFileToContentDir(BlueprintPath))
+	const FString EngineInternalPath = ConvertToEngineFriendlyPath(BlueprintPath);
+	if (EngineInternalPath.IsEmpty())
 	{
-		const FString InternalPath = ConstructBlueprintInternalPath(BlueprintPath);
-		const FString BlueprintFilename = FPaths::GetBaseFilename(BlueprintPath);
-		const bool ParseResult = ParseBlueprint(InternalPath, BlueprintFilename);
-		const bool DeleteResult = DeleteCopiedUAsset(BlueprintFilename);
-		if (ParseResult && DeleteResult)
-		{
-			return true;
-		}
+		return false;
 	}
-
-	return false;
+	
+	const FString BlueprintFilename = FPaths::GetBaseFilename(BlueprintPath);
+	
+	return ParseBlueprint(EngineInternalPath, BlueprintFilename);
 }
 
 void FPlatformAgnosticChecker::Exit()
@@ -57,8 +53,9 @@ bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 		UE_LOG(LogPlatformAgnosticChecker, Error, TEXT("Can't copy file from %s to %s"), BlueprintPath, *DestFilePath);
 		return false;
 	}
-	
-	UE_LOG(LogPlatformAgnosticChecker, Display, TEXT("Successfully copied file from %s to %s"), BlueprintPath, *DestFilePath);
+
+	UE_LOG(LogPlatformAgnosticChecker, Display, TEXT("Successfully copied file from %s to %s"), BlueprintPath,
+	       *DestFilePath);
 	return true;
 }
 
@@ -75,7 +72,7 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 	auto LoadContext = FUObjectThreadContext::Get().GetSerializeContext();
 	FLinkerLoad* Linker = GetPackageLinker(nullptr, *BlueprintInternalPath, 0x0, nullptr,
 	                                       nullptr, nullptr, &LoadContext, nullptr, nullptr);
-	
+
 	UE_LOG(LogPlatformAgnosticChecker, Display, TEXT("Successfully Loaded object %s"), *BlueprintInternalPath);
 	const bool Result = SerializeUAssetInfo(Linker, BlueprintFilename);
 	Object = nullptr;
@@ -86,7 +83,7 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 bool FPlatformAgnosticChecker::SerializeUAssetInfo(FLinkerLoad* UAssetLinker, const FString& BlueprintFilename)
 {
 	IUEAssetSerializer* Serializer = IUEAssetSerializer::Create(UAssetLinker, BlueprintFilename);
-	
+
 	return Serializer->Serialize();
 }
 
@@ -108,16 +105,16 @@ FString FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(const TCHAR* Bluep
 	//TODO Write some tests for this
 	//Convert Windows path to normalized path
 	FString FullPath = FString(BlueprintPath).Replace(TEXT("\\"), TEXT("/"));
-	
+
 	TArray<FString> TokenizedPath;
 	FullPath.ParseIntoArray(TokenizedPath, TEXT("/"), true);
 
 	FString Filename = FPaths::GetBaseFilename(BlueprintPath);
 	TokenizedPath[TokenizedPath.Num() - 1] = Filename;
-	
+
 	FStringBuilderBase StringBuilder;
 	bool AppendString = false;
-	
+
 	for (int64 Index = 0; Index < TokenizedPath.Num(); Index++)
 	{
 		if (AppendString)
@@ -132,7 +129,7 @@ FString FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(const TCHAR* Bluep
 			AppendString = true;
 		}
 	}
-	
+
 	return StringBuilder.ToString();
 }
 
