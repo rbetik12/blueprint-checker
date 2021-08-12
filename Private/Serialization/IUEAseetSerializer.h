@@ -13,6 +13,8 @@ public:
 	
 	virtual ~IUEAssetSerializer() = default;
 
+
+	// Overriding this method you should provide code for serializing the asset data (binary, JSON, etc)
 	virtual bool Serialize() = 0;
 
 	static FString Directory;
@@ -34,7 +36,11 @@ protected:
 		return true;
 	}
 
+	// Overriding this method you should provide code for extracting data from UAsset Export map
 	virtual bool ParseExportMap() = 0;
+
+	// Overriding this method you should provide code for saving serialized data (writing to stdout or saving to file)
+	virtual bool Save() = 0;
 
 	IFileManager* FileManager = nullptr;
 	FLinkerLoad* Linker = nullptr;

@@ -11,5 +11,8 @@ public:
 	virtual bool Serialize() override;
 protected:
 	virtual bool ParseExportMap() override;
+
+	virtual bool Save() override;
 	FUE4AssetData AssetData;
+	FString JSONPayload;
 };

@@ -23,7 +23,7 @@ void FEngineWorker::PreStartupScreen()
 	GEngineLoop.PreInitPreStartupScreen(TEXT(""));
 #else
 	// Console flags that tells prevent initialization of rendering system
-	const TCHAR* CmdLine = TEXT("-nullrhi -NoShaderCompile -stdout");
+	const TCHAR* CmdLine = TEXT("-nullrhi -NoShaderCompile");
 	
 	if (GLog != nullptr)
 	{

@@ -2,33 +2,20 @@
 #include "UEAssets/FUEAssetReader.h"
 #include "JsonObjectConverter.h"
 #include "K2Node.h"
-#include "Misc/FileHelper.h"
+#include <iostream>
 
 bool FJsonUEAssetSerializer::Serialize()
 {
 	ParseExportMap();
 	
-	FString JSONPayload;
 	const bool JsonResult = FJsonObjectConverter::UStructToJsonObjectString(AssetData, JSONPayload, 0, 0);
-
+	
 	if (!JsonResult)
 	{
 		return false;
 	}
-
-	const FString TmpFilename = "~" + Filename;
-	const FString TmpFilenamePath = Directory + TmpFilename;
 	
-	const bool SaveResult = FFileHelper::SaveStringToFile(JSONPayload, *TmpFilenamePath);
-
-	if (!SaveResult)
-	{
-		return false;
-	}
-
-	const FString FullFilenamePath = Directory + Filename + ".json";
-	
-	return FileManager->Move(*FullFilenamePath, *TmpFilenamePath, true, true);
+	return Save();
 }
 
 bool FJsonUEAssetSerializer::ParseExportMap()
@@ -75,5 +62,12 @@ bool FJsonUEAssetSerializer::ParseExportMap()
 	AssetData.BlueprintClasses = BlueprintClassObjects;
 	AssetData.OtherClasses = OtherAssetObjects;
 	AssetData.K2VariableSets = K2GraphNodeObjects;
+	return true;
+}
+
+bool FJsonUEAssetSerializer::Save()
+{
+	std::wcout << *JSONPayload << std::endl;
+
 	return true;
 }
