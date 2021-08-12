@@ -103,6 +103,39 @@ bool FPlatformAgnosticChecker::DeleteCopiedUAsset(const FString& BlueprintFilena
 	return FileManager->Delete(*FPaths::ConvertRelativePathToFull(EngineContentDirPath), false, true);
 }
 
+FString FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(const TCHAR* BlueprintPath)
+{
+	//TODO Write some tests for this
+	//Convert Windows path to normalized path
+	FString FullPath = FString(BlueprintPath).Replace(TEXT("\\"), TEXT("/"));
+	
+	TArray<FString> TokenizedPath;
+	FullPath.ParseIntoArray(TokenizedPath, TEXT("/"), true);
+
+	FString Filename = FPaths::GetBaseFilename(BlueprintPath);
+	TokenizedPath[TokenizedPath.Num() - 1] = Filename;
+	
+	FStringBuilderBase StringBuilder;
+	bool AppendString = false;
+	
+	for (int64 Index = 0; Index < TokenizedPath.Num(); Index++)
+	{
+		if (AppendString)
+		{
+			StringBuilder.Append(TEXT("/"));
+			StringBuilder.Append(TokenizedPath[Index]);
+		}
+		if (TokenizedPath[Index].Equals("Content"))
+		{
+			StringBuilder.Append(TEXT("/"));
+			StringBuilder.Append(TokenizedPath[Index - 1]);
+			AppendString = true;
+		}
+	}
+	
+	return StringBuilder.ToString();
+}
+
 void FPlatformAgnosticChecker::Init()
 {
 	if (!bIsEngineInitialized)
