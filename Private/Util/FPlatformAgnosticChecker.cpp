@@ -20,8 +20,9 @@ bool FPlatformAgnosticChecker::Check(const TCHAR* BlueprintPath)
 	}
 	
 	const FString BlueprintFilename = FPaths::GetBaseFilename(BlueprintPath);
-	
-	return ParseBlueprint(EngineInternalPath, BlueprintFilename);
+	const bool ParseResult = ParseBlueprint(EngineInternalPath, BlueprintFilename);
+	const bool DeleteResult = DeleteCopiedUAsset(BlueprintFilename);
+	return ParseResult && DeleteResult;
 }
 
 void FPlatformAgnosticChecker::Exit()
@@ -42,10 +43,19 @@ void FPlatformAgnosticChecker::InitializeTestEnvironment(int Argc, char* Argv[])
 
 bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 {
-	const FString EngineContentDirPath(FPaths::EngineContentDir() + "_Temp/");
-	const FString DestFilePath = EngineContentDirPath + FPaths::GetCleanFilename(BlueprintPath);
-
 	IFileManager* FileManager = &IFileManager::Get();
+	const FString EngineTempDirPath(FPaths::EngineSavedDir() + "BlueprintChecker/");
+	
+	if (!FileManager->DirectoryExists(*EngineTempDirPath))
+	{
+		if (!FileManager->MakeDirectory(*EngineTempDirPath))
+		{
+			UE_LOG(LogPlatformAgnosticChecker, Error, TEXT("Can't create directory %s"), *EngineTempDirPath);
+			return false;	
+		}
+	}
+	
+	const FString DestFilePath = EngineTempDirPath + FPaths::GetCleanFilename(BlueprintPath);
 	const uint32 CopyResult = FileManager->Copy(*DestFilePath, BlueprintPath, true, false);
 
 	if (CopyResult != COPY_OK)
@@ -95,42 +105,60 @@ FString FPlatformAgnosticChecker::ConstructBlueprintInternalPath(const TCHAR* Bl
 
 bool FPlatformAgnosticChecker::DeleteCopiedUAsset(const FString& BlueprintFilename)
 {
-	const FString EngineContentDirPath(FPaths::EngineContentDir() + "_Temp/" + BlueprintFilename + ".uasset");
+	const FString EngineTempDirPath(FPaths::EngineSavedDir() + "BlueprintChecker/" + BlueprintFilename + ".uasset");
 	IFileManager* FileManager = &IFileManager::Get();
-	return FileManager->Delete(*FPaths::ConvertRelativePathToFull(EngineContentDirPath), false, true);
+	return FileManager->Delete(*FPaths::ConvertRelativePathToFull(EngineTempDirPath), false, true);
 }
 
+//TODO Write some tests for this
 FString FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(const TCHAR* BlueprintPath)
 {
-	//TODO Write some tests for this
 	//Convert Windows path to normalized path
 	FString FullPath = FString(BlueprintPath).Replace(TEXT("\\"), TEXT("/"));
 
-	TArray<FString> TokenizedPath;
-	FullPath.ParseIntoArray(TokenizedPath, TEXT("/"), true);
-
-	FString Filename = FPaths::GetBaseFilename(BlueprintPath);
-	TokenizedPath[TokenizedPath.Num() - 1] = Filename;
-
-	FStringBuilderBase StringBuilder;
-	bool AppendString = false;
-
-	for (int64 Index = 0; Index < TokenizedPath.Num(); Index++)
+	//Checks whether this path contains content directory and *.uasset in it
+	if (FullPath.Find("/Content/") == INDEX_NONE || FullPath.Find(".uasset") == INDEX_NONE)
 	{
-		if (AppendString)
-		{
-			StringBuilder.Append(TEXT("/"));
-			StringBuilder.Append(TokenizedPath[Index]);
-		}
-		if (TokenizedPath[Index].Equals("Content"))
-		{
-			StringBuilder.Append(TEXT("/"));
-			StringBuilder.Append(TokenizedPath[Index - 1]);
-			AppendString = true;
-		}
+		return FString();
 	}
 
-	return StringBuilder.ToString();
+	FString Filename = FPaths::GetBaseFilename(BlueprintPath);
+	
+	if (FullPath.Find(TEXT("/Plugins/")) != INDEX_NONE || FullPath.Find(TEXT("/Engine/")) == INDEX_NONE)
+	{
+		if (CopyFileToContentDir(BlueprintPath))
+		{
+			return FString("/Temp/BlueprintChecker/") + Filename;	
+		}
+	}
+	else
+	{
+		TArray<FString> TokenizedPath;
+		FullPath.ParseIntoArray(TokenizedPath, TEXT("/"), true);
+		TokenizedPath[TokenizedPath.Num() - 1] = Filename;
+
+		FStringBuilderBase StringBuilder;
+		bool AppendString = false;
+
+		for (int64 Index = 0; Index < TokenizedPath.Num(); Index++)
+		{
+			if (AppendString)
+			{
+				StringBuilder.Append(TEXT("/"));
+				StringBuilder.Append(TokenizedPath[Index]);
+			}
+			if (TokenizedPath[Index].Equals("Content"))
+			{
+				StringBuilder.Append(TEXT("/"));
+				StringBuilder.Append(TokenizedPath[Index - 1]);
+				AppendString = true;
+			}
+		}
+
+		return StringBuilder.ToString();
+	}
+
+	return FString();
 }
 
 void FPlatformAgnosticChecker::Init()
