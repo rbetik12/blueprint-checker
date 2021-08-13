@@ -16,12 +16,23 @@ bool FPlatformAgnosticChecker::Check(const TCHAR* BlueprintPath)
 	const FString EngineInternalPath = ConvertToEngineFriendlyPath(BlueprintPath);
 	if (EngineInternalPath.IsEmpty())
 	{
+		UE_LOG(LogPlatformAgnosticChecker, Error, TEXT("Can't convert path %s to engine-friendly path"), BlueprintPath);
 		return false;
 	}
 	
 	const FString BlueprintFilename = FPaths::GetBaseFilename(BlueprintPath);
 	const bool ParseResult = ParseBlueprint(EngineInternalPath, BlueprintFilename);
 	const bool DeleteResult = DeleteCopiedUAsset(BlueprintFilename);
+
+	if (DeleteResult)
+	{
+		UE_LOG(LogPlatformAgnosticChecker, Display, TEXT("Successfully deleted file: %s"), *BlueprintFilename);
+	}
+	else
+	{
+		UE_LOG(LogPlatformAgnosticChecker, Error, TEXT("Failed to delete file: %s"), *BlueprintFilename);
+	}
+	
 	return ParseResult && DeleteResult;
 }
 
@@ -97,12 +108,6 @@ bool FPlatformAgnosticChecker::SerializeUAssetInfo(FLinkerLoad* UAssetLinker, co
 	return Serializer->Serialize();
 }
 
-FString FPlatformAgnosticChecker::ConstructBlueprintInternalPath(const TCHAR* BlueprintPath)
-{
-	const FString BlueprintInternalPath = FString("/Engine/_Temp/") + FPaths::GetBaseFilename(BlueprintPath);
-	return BlueprintInternalPath;
-}
-
 bool FPlatformAgnosticChecker::DeleteCopiedUAsset(const FString& BlueprintFilename)
 {
 	const FString EngineTempDirPath(FPaths::EngineSavedDir() + "BlueprintChecker/" + BlueprintFilename + ".uasset");
@@ -110,7 +115,6 @@ bool FPlatformAgnosticChecker::DeleteCopiedUAsset(const FString& BlueprintFilena
 	return FileManager->Delete(*FPaths::ConvertRelativePathToFull(EngineTempDirPath), false, true);
 }
 
-//TODO Write some tests for this
 FString FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(const TCHAR* BlueprintPath)
 {
 	//Convert Windows path to normalized path

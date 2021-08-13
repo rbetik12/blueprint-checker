@@ -4,16 +4,31 @@
 #include "K2Node.h"
 #include <iostream>
 
+DECLARE_LOG_CATEGORY_CLASS(LogFJsonUEAssetSerializer, Log, All);
+
 bool FJsonUEAssetSerializer::Serialize()
 {
-	ParseExportMap();
+	const bool ParseResult = ParseExportMap();
+
+	if (ParseResult)
+	{
+		UE_LOG(LogFJsonUEAssetSerializer, Display, TEXT("Successfully parsed export map: %s"), *Filename);
+	}
+	else
+	{
+		UE_LOG(LogFJsonUEAssetSerializer, Error, TEXT("Failed to parse export map: %s"), *Filename);
+		return false;
+	}
 	
 	const bool JsonResult = FJsonObjectConverter::UStructToJsonObjectString(AssetData, JSONPayload, 0, 0);
 	
 	if (!JsonResult)
 	{
+		UE_LOG(LogFJsonUEAssetSerializer, Error, TEXT("Failed to serialize JSON: %s"), *Filename);
 		return false;
 	}
+
+	UE_LOG(LogFJsonUEAssetSerializer, Display, TEXT("Successfully serialized JSON: %s"), *Filename);
 	
 	return Save();
 }
@@ -69,5 +84,8 @@ bool FJsonUEAssetSerializer::Save()
 {
 	std::wcout << *JSONPayload << std::endl;
 	std::wcout << "End" << std::endl;
+
+	UE_LOG(LogFJsonUEAssetSerializer, Display, TEXT("Successfully written to stdout: %s"), *Filename);
+	
 	return true;
 }

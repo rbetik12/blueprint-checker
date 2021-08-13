@@ -23,7 +23,6 @@ private:
 	static bool ParseBlueprint(const FString& BlueprintInternalPath, const FString& BlueprintFilename);
 	static bool DeleteCopiedUAsset(const FString& BlueprintFilename);
 	static FString ConvertToEngineFriendlyPath(const TCHAR* BlueprintPath);
-	static FString ConstructBlueprintInternalPath(const TCHAR* BlueprintPath);
 	
 	static bool bIsEngineInitialized;
 };
