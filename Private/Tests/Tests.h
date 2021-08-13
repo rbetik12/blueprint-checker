@@ -62,6 +62,30 @@ TEST_F(FTests, BlueprintParsingTest)
 	}
 }
 
+TEST_F(FTests, TestGamePathConvertion)
+{
+	const FString GameAssetPath = "C:/Users/Vitaliy/Code/Unreal/ShooterGame/Content/Blueprints/TaskAlwaysTrue.uasset";
+	const FString EngineFriendlyPath = FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(*GameAssetPath);
+
+	EXPECT_STREQ(TEXT("/Temp/BlueprintChecker/TaskAlwaysTrue"), *EngineFriendlyPath);
+}
+
+TEST_F(FTests, TestEnginePathConvertion)
+{
+	const FString EngineAssetPath = FPaths::EngineContentDir() + "Engine_MI_Shaders/Instances/M_ES_Phong_Opaque_INST_01.uasset";
+	const FString EngineFriendlyPath = FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(*EngineAssetPath);
+
+	EXPECT_STREQ(TEXT("/Engine/Engine_MI_Shaders/Instances/M_ES_Phong_Opaque_INST_01"), *EngineFriendlyPath);
+}
+
+TEST_F(FTests, TestPluginPathConvertion)
+{
+	const FString PluginAssetPath = FPaths::EnginePluginsDir() + "Compositing/Composure/Content/Materials/ChromaticAberration/ComposureChromaticAberrationSwizzling.uasset";
+	const FString EngineFriendlyPath = FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(*PluginAssetPath);
+
+	EXPECT_STREQ(TEXT("/Temp/BlueprintChecker/ComposureChromaticAberrationSwizzling"), *EngineFriendlyPath);
+}
+
 std::vector<FString> FTests::UAssetFiles = std::vector<FString>();
 
 #endif
