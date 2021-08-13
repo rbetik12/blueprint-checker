@@ -4,7 +4,6 @@
 #include <fstream>
 #include "Misc/Paths.h"
 #include "Util/FPlatformAgnosticChecker.h"
-#include "TestUtils.h"
 
 class FTests : public ::testing::Test
 {
@@ -12,59 +11,47 @@ protected:
 	static void SetUpTestSuite()
 	{
 		FPlatformAgnosticChecker::Init();
-		GetUAssetPaths();
+		GameAssetPath = "C:/Users/Vitaliy/Code/Unreal/ShooterGame/Content/Blueprints/TaskAlwaysTrue.uasset";
+		EngineAssetPath = FPaths::EngineContentDir() + "Engine_MI_Shaders/Instances/M_ES_Phong_Opaque_INST_01.uasset";
+		PluginAssetPath = FPaths::EnginePluginsDir() + "Compositing/Composure/Content/Materials/ChromaticAberration/ComposureChromaticAberrationSwizzling.uasset";
+		IncorrectPluginAssetPathWithoutExtension = FPaths::EnginePluginsDir() + "Compositing/Composure/Content/Materials/ChromaticAberration/ComposureChromaticAberrationSwizzling";
+		IncorrectPluginAssetPath = FPaths::EnginePluginsDir() + "Compositing/Composure/Materials/ChromaticAberration/ComposureChromaticAberrationSwizzling.uasset";
 	}
 
 	static void TearDownTestSuite()
 	{
 		FPlatformAgnosticChecker::Exit();
 	}
-
-	static void GetUAssetPaths()
-	{
-		const FString EngineTestDir = TestUtils::EnginePathToAbsolutePath(TEST_UASSETS_DIRECTORY);
-		const FString BatchFilePath = EngineTestDir + "batch.txt";
-
-		std::ifstream FileStream(*BatchFilePath);
-
-		if (!FileStream.good())
-		{
-			std::wcerr << "Can't open batch file!" << std::endl;
-			FileStream.close();
-			return;
-		}
-
-		std::string Path;
-		while (std::getline(FileStream, Path))
-		{
-			UAssetFiles.push_back(Path.c_str());
-		}
-	}
-
-	static std::vector<FString> UAssetFiles;
+	
+	static FString GameAssetPath;
+	static FString EngineAssetPath;
+	static FString PluginAssetPath;
+	static FString IncorrectPluginAssetPath;
+	static FString IncorrectPluginAssetPathWithoutExtension;
 };
 
-TEST_F(FTests, CopyFilesTest)
+TEST_F(FTests, CopyFileTest)
 {
-	for (auto& Path: UAssetFiles)
-	{
-		const FString AbsoluteBlueprintPath = FPaths::ConvertRelativePathToFull(Path);
-		EXPECT_TRUE(FPlatformAgnosticChecker::CopyFileToContentDir(*AbsoluteBlueprintPath));
-	}
+	EXPECT_TRUE(FPlatformAgnosticChecker::CopyFileToContentDir(*PluginAssetPath));
 }
 
-TEST_F(FTests, BlueprintParsingTest)
+TEST_F(FTests, CopyIncorrectFileTest)
 {
-	for (auto& Path: UAssetFiles)
-	{
-		const FString AbsoluteBlueprintPath = FPaths::ConvertRelativePathToFull(Path);
-		EXPECT_TRUE(FPlatformAgnosticChecker::Check(*AbsoluteBlueprintPath));
-	}
+	EXPECT_FALSE(FPlatformAgnosticChecker::CopyFileToContentDir(*IncorrectPluginAssetPathWithoutExtension));
+}
+
+TEST_F(FTests, ParseBlueprintTest)
+{
+	EXPECT_TRUE(FPlatformAgnosticChecker::Check(*PluginAssetPath));
+}
+
+TEST_F(FTests, ParseIncorrectBlueprintTest)
+{
+	EXPECT_FALSE(FPlatformAgnosticChecker::Check(*IncorrectPluginAssetPath));
 }
 
 TEST_F(FTests, TestGamePathConvertion)
 {
-	const FString GameAssetPath = "C:/Users/Vitaliy/Code/Unreal/ShooterGame/Content/Blueprints/TaskAlwaysTrue.uasset";
 	const FString EngineFriendlyPath = FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(*GameAssetPath);
 
 	EXPECT_STREQ(TEXT("/Temp/BlueprintChecker/TaskAlwaysTrue"), *EngineFriendlyPath);
@@ -72,7 +59,6 @@ TEST_F(FTests, TestGamePathConvertion)
 
 TEST_F(FTests, TestEnginePathConvertion)
 {
-	const FString EngineAssetPath = FPaths::EngineContentDir() + "Engine_MI_Shaders/Instances/M_ES_Phong_Opaque_INST_01.uasset";
 	const FString EngineFriendlyPath = FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(*EngineAssetPath);
 
 	EXPECT_STREQ(TEXT("/Engine/Engine_MI_Shaders/Instances/M_ES_Phong_Opaque_INST_01"), *EngineFriendlyPath);
@@ -80,7 +66,6 @@ TEST_F(FTests, TestEnginePathConvertion)
 
 TEST_F(FTests, TestPluginPathConvertion)
 {
-	const FString PluginAssetPath = FPaths::EnginePluginsDir() + "Compositing/Composure/Content/Materials/ChromaticAberration/ComposureChromaticAberrationSwizzling.uasset";
 	const FString EngineFriendlyPath = FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(*PluginAssetPath);
 
 	EXPECT_STREQ(TEXT("/Temp/BlueprintChecker/ComposureChromaticAberrationSwizzling"), *EngineFriendlyPath);
@@ -88,20 +73,22 @@ TEST_F(FTests, TestPluginPathConvertion)
 
 TEST_F(FTests, TestIncorrectPathConvertionWithoutExtension)
 {
-	const FString PluginAssetPath = FPaths::EnginePluginsDir() + "Compositing/Composure/Content/Materials/ChromaticAberration/ComposureChromaticAberrationSwizzling";
-	const FString EngineFriendlyPath = FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(*PluginAssetPath);
+	const FString EngineFriendlyPath = FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(*IncorrectPluginAssetPath);
 
 	EXPECT_TRUE(EngineFriendlyPath.IsEmpty());
 }
 
 TEST_F(FTests, TestIncorrectPathConvertionWithoutContent)
 {
-	const FString PluginAssetPath = FPaths::EnginePluginsDir() + "Compositing/Composure/Materials/ChromaticAberration/ComposureChromaticAberrationSwizzling.uasset";
-	const FString EngineFriendlyPath = FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(*PluginAssetPath);
+	const FString EngineFriendlyPath = FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(*IncorrectPluginAssetPathWithoutExtension);
 
 	EXPECT_TRUE(EngineFriendlyPath.IsEmpty());
 }
 
-std::vector<FString> FTests::UAssetFiles = std::vector<FString>();
+FString FTests::EngineAssetPath;
+FString FTests::GameAssetPath;
+FString FTests::PluginAssetPath;
+FString FTests::IncorrectPluginAssetPath;
+FString FTests::IncorrectPluginAssetPathWithoutExtension;
 
 #endif
