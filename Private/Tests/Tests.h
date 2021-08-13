@@ -86,6 +86,22 @@ TEST_F(FTests, TestPluginPathConvertion)
 	EXPECT_STREQ(TEXT("/Temp/BlueprintChecker/ComposureChromaticAberrationSwizzling"), *EngineFriendlyPath);
 }
 
+TEST_F(FTests, TestIncorrectPathConvertionWithoutExtension)
+{
+	const FString PluginAssetPath = FPaths::EnginePluginsDir() + "Compositing/Composure/Content/Materials/ChromaticAberration/ComposureChromaticAberrationSwizzling";
+	const FString EngineFriendlyPath = FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(*PluginAssetPath);
+
+	EXPECT_TRUE(EngineFriendlyPath.IsEmpty());
+}
+
+TEST_F(FTests, TestIncorrectPathConvertionWithoutContent)
+{
+	const FString PluginAssetPath = FPaths::EnginePluginsDir() + "Compositing/Composure/Materials/ChromaticAberration/ComposureChromaticAberrationSwizzling.uasset";
+	const FString EngineFriendlyPath = FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(*PluginAssetPath);
+
+	EXPECT_TRUE(EngineFriendlyPath.IsEmpty());
+}
+
 std::vector<FString> FTests::UAssetFiles = std::vector<FString>();
 
 #endif
