@@ -3,6 +3,7 @@
 #include "Containers/UnrealString.h"
 #include "HAL/FileManager.h"
 
+// Abstract class that provides interface for serializing asset data
 class IUEAssetSerializer
 {
 public:

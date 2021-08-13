@@ -117,7 +117,7 @@ bool FPlatformAgnosticChecker::DeleteCopiedUAsset(const FString& BlueprintFilena
 
 FString FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(const TCHAR* BlueprintPath)
 {
-	//Convert Windows path to normalized path
+	// User can provide path with backslashes, so here we guarantee that it will be converted to normal path
 	FString FullPath = FString(BlueprintPath).Replace(TEXT("\\"), TEXT("/"));
 
 	//Checks whether this path contains content directory and *.uasset in it
@@ -127,7 +127,9 @@ FString FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(const TCHAR* Bluep
 	}
 
 	FString Filename = FPaths::GetBaseFilename(BlueprintPath);
-	
+
+	// Here we check whether this path points to plugin or game related content. If it is, we copy uassets from there to
+	// engine temp directory
 	if (FullPath.Find(TEXT("/Plugins/")) != INDEX_NONE || FullPath.Find(TEXT("/Engine/")) == INDEX_NONE)
 	{
 		if (CopyFileToContentDir(BlueprintPath))
@@ -135,6 +137,8 @@ FString FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(const TCHAR* Bluep
 			return FString("/Temp/BlueprintChecker/") + Filename;	
 		}
 	}
+	// If it's not a plugin or game related content, we parse engine path and extract from there /Content/ folder
+	// It works like this: <user stuff>/Engine/Content/SomeDir/Dir/Asset.uasset -> /Engine/SomeDir/Dir/Asset
 	else
 	{
 		TArray<FString> TokenizedPath;

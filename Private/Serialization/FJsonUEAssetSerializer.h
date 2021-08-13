@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "IUEAseetSerializer.h"
 
+// Serializes uasset data to JSON and writes it to standard output
 class FJsonUEAssetSerializer : public IUEAssetSerializer
 {
 public:
