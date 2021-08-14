@@ -11,7 +11,7 @@ User can launch program in 3 modes:
 - StdIn mode (works as a daemon that waits path to uassets from stdin)
 
 Command line arguments
-```bash
+```
 OPTION       REQUIRED   DESCRIPTION
 ===========================================
 -h, --help      no      Help
