@@ -82,21 +82,18 @@ bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 
 bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPath, const FString& BlueprintFilename)
 {
-	UObject* Object = LoadObject<UObject>(nullptr, *BlueprintInternalPath);
-	if (!Object)
+	auto LoadContext = FUObjectThreadContext::Get().GetSerializeContext();
+	FLinkerLoad* Linker = GetPackageLinker(nullptr, *BlueprintInternalPath, 0x0, nullptr,
+										nullptr, nullptr, &LoadContext, nullptr, nullptr);
+	if (!Linker)
 	{
 		TryCollectGarbage(RF_NoFlags, false);
-		UE_LOG(LogPlatformAgnosticChecker, Error, TEXT("Can't load object %s"), *BlueprintInternalPath);
+		UE_LOG(LogPlatformAgnosticChecker, Error, TEXT("Can't get package linker. Package: %s"), *BlueprintInternalPath);
 		return false;
 	}
 
-	auto LoadContext = FUObjectThreadContext::Get().GetSerializeContext();
-	FLinkerLoad* Linker = GetPackageLinker(nullptr, *BlueprintInternalPath, 0x0, nullptr,
-	                                       nullptr, nullptr, &LoadContext, nullptr, nullptr);
-
-	UE_LOG(LogPlatformAgnosticChecker, Display, TEXT("Successfully Loaded object %s"), *BlueprintInternalPath);
+	UE_LOG(LogPlatformAgnosticChecker, Display, TEXT("Successfully got package linker. Package: %s"), *BlueprintInternalPath);
 	const bool Result = SerializeUAssetInfo(Linker, BlueprintFilename);
-	Object = nullptr;
 	TryCollectGarbage(RF_NoFlags, false);
 	return Result;
 }
