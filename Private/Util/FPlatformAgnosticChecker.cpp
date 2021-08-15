@@ -82,9 +82,8 @@ bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 
 bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPath, const FString& BlueprintFilename)
 {
-	auto LoadContext = FUObjectThreadContext::Get().GetSerializeContext();
-	FLinkerLoad* Linker = GetPackageLinker(nullptr, *BlueprintInternalPath, 0x0, nullptr,
-										nullptr, nullptr, &LoadContext, nullptr, nullptr);
+	FLinkerLoad* Linker = LoadPackageLinker(nullptr, *BlueprintInternalPath);
+	
 	if (!Linker)
 	{
 		TryCollectGarbage(RF_NoFlags, false);
@@ -94,7 +93,8 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 
 	UE_LOG(LogPlatformAgnosticChecker, Display, TEXT("Successfully got package linker. Package: %s"), *BlueprintInternalPath);
 	const bool Result = SerializeUAssetInfo(Linker, BlueprintFilename);
-	TryCollectGarbage(RF_NoFlags, false);
+	Linker = nullptr;
+	TryCollectGarbage(RF_NoFlags, true);
 	return Result;
 }
 

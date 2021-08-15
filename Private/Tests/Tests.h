@@ -85,6 +85,13 @@ TEST_F(FTests, TestIncorrectPathConvertionWithoutContent)
 	EXPECT_TRUE(EngineFriendlyPath.IsEmpty());
 }
 
+TEST_F(FTests, LoadSameUAssetTwice)
+{
+	// This test is related to issue, when I tried to get package linker for same uasset twice, program was just hanging up
+	EXPECT_TRUE(FPlatformAgnosticChecker::Check(*EngineAssetPath));
+	EXPECT_TRUE(FPlatformAgnosticChecker::Check(*EngineAssetPath));
+}
+
 FString FTests::EngineAssetPath;
 FString FTests::GameAssetPath;
 FString FTests::PluginAssetPath;
