@@ -10,7 +10,7 @@ User can launch program in 3 modes:
 - Batch mode (parses list of uasset paths and process them)
 - StdIn mode (works as a daemon that waits path to uassets from stdin)
 
-Command line arguments
+### Launch options
 ```
 OPTION       REQUIRED   DESCRIPTION
 ===========================================
@@ -26,6 +26,35 @@ In StdIn mode - Launch in daemon-like mode
 Currently utility outputs content of export map in JSON format to standard output.
 All information is gathered from Unreal Engine class `FLinkerLoad` it contains all needed information about uasset object.
 
+### JSON output format
+
+```
+{
+        "blueprintClasses": [
+                {
+                        "index": <int>,
+                        "objectName": <string>,
+                        "className": <string>,
+                        "superClassName": <string>
+                }
+        ],
+        "k2VariableSets": [
+                {
+                        "index": <int>,
+                        "objectKind": <string>,
+                        "memberName": <string>
+                }
+        ],
+        "otherClasses": [
+                {
+                        "index": <int>,
+                        "className": <string>
+                }
+        ]
+}
+
+```
+
 ### Useful links
 - `FLinkerLoad` [official 4.26 documentation](https://docs.unrealengine.com/4.26/en-US/API/Runtime/CoreUObject/UObject/FLinkerLoad/)
 - [Custom docs about blueprint internal format](https://gist.github.com/rbetik12/21201e3c40201e8f8aed16c4bcf0e75e)
@@ -33,9 +62,6 @@ All information is gathered from Unreal Engine class `FLinkerLoad` it contains a
 ## Tested on
 - Windows 10 (MSVC version 19.28.29336)
 - Unreal Engine built from sources of 4.26.2-release branch
-
-## Known issues
-- Some assets doesn't load fully (using `LoadObject<T>()` method), but probably `FLinkerLoad` still can be filled
 
 ## How to build
 1. Clone the repo like this `<Unreal Engine root directory>/Engine/Programs/Source`
@@ -45,4 +71,4 @@ All information is gathered from Unreal Engine class `FLinkerLoad` it contains a
 
 ## Contacts
 
-All the problems can be addressed in issues, and also to vitaliy.prikota@jetbrains.com
+All the problems can be addressed in issues, and also to `vitaliy.prikota@jetbrains.com`
