@@ -34,6 +34,7 @@ bool FJsonUEAssetSerializer::Serialize()
 	return Save();
 }
 
+// TODO Write tests for this
 bool FJsonUEAssetSerializer::ParseExportMap()
 {
 	TArray<FBlueprintClassObject> BlueprintClassObjects;

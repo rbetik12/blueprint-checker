@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #ifdef COMPILE_TESTS
 #include <gtest/gtest.h>
 #include <fstream>
