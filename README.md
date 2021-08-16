@@ -65,9 +65,11 @@ All information is gathered from Unreal Engine class `FLinkerLoad` it contains a
 
 ## How to build
 1. Clone the repo like this `<Unreal Engine root directory>/Engine/Programs/Source`
-2. Run GenerateProgramFiles.bat to generate project file
+2. Run `GenerateProgramFiles.bat` to generate project file
 3. Open your favorite IDE and add BlueprintChecker project from `<Unreal Engine root directory>/Engine/Intermediate/ProjectFiles`
 4. Build and run
+
+Program requires **~16 GB** of free memory on the disk, because it uses it own compilation environment and compiles as editor.
 
 ## Contacts
 
