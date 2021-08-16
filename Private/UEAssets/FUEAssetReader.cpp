@@ -11,7 +11,7 @@ FObjectExportSerialized FUEAssetReader::ReadObjectExport(const FObjectExport& Ob
 	ObjectExportSerialized.Index = Index;
 	ObjectExportSerialized.ObjectName = ObjExport.ObjectName.ToString();
 	ObjectExportSerialized.ClassName = Linker->ImpExp(ObjExport.ClassIndex).ObjectName.ToString();
-
+	
 	if (ObjExport.SuperIndex.IsNull())
 	{
 		ObjectExportSerialized.SuperClassName = FString();

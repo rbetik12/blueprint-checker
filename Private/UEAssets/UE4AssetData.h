@@ -2,6 +2,12 @@
 
 #include <vector>
 
+#include "K2Node_AddDelegate.h"
+#include "K2Node_CallDelegate.h"
+#include "K2Node_CallFunction.h"
+#include "K2Node_ClearDelegate.h"
+#include "K2Node_VariableGet.h"
+#include "K2Node_VariableSet.h"
 #include "Containers/UnrealString.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/ScriptMacros.h"
@@ -83,6 +89,41 @@ struct FK2GraphNodeObject
 			return EKind::CallDelegate;
 		}
 		return EKind::Other;
+	}
+
+	static void GetMemberNameByClassName(const UK2Node* Node, FString& MemberName)
+	{
+		FString ClassName = Node->GetClass()->GetName();
+		if (ClassName == "K2Node_CallFunction")
+		{
+			const UK2Node_CallFunction* CastedNode = Cast<UK2Node_CallFunction>(Node);
+			MemberName = CastedNode->FunctionReference.GetMemberName().ToString();
+		}
+		if (ClassName == "K2Node_VariableSet")
+		{
+			const UK2Node_VariableSet* CastedNode = Cast<UK2Node_VariableSet>(Node);
+			MemberName = CastedNode->VariableReference.GetMemberName().ToString();
+		}
+		if (ClassName == "K2Node_VariableGet")
+		{
+			const UK2Node_VariableGet* CastedNode = Cast<UK2Node_VariableGet>(Node);
+			MemberName = CastedNode->VariableReference.GetMemberName().ToString();
+		}
+		if (ClassName == "K2Node_AddDelegate")
+		{
+			const UK2Node_AddDelegate* CastedNode = Cast<UK2Node_AddDelegate>(Node);
+			MemberName = CastedNode->DelegateReference.GetMemberName().ToString();
+		}
+		if (ClassName == "K2Node_ClearDelegate")
+		{
+			const UK2Node_ClearDelegate* CastedNode = Cast<UK2Node_ClearDelegate>(Node);
+			MemberName = CastedNode->DelegateReference.GetMemberName().ToString();
+		}
+		if (ClassName == "K2Node_CallDelegate")
+		{
+			const UK2Node_CallDelegate* CastedNode = Cast<UK2Node_CallDelegate>(Node);
+			MemberName = CastedNode->DelegateReference.GetMemberName().ToString();
+		}
 	}
 
 	UPROPERTY()

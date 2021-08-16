@@ -2,6 +2,7 @@
 #include "UEAssets/FUEAssetReader.h"
 #include "JsonObjectConverter.h"
 #include "K2Node.h"
+#include "K2Node_CallFunction.h"
 #include <iostream>
 
 DECLARE_LOG_CATEGORY_CLASS(LogFJsonUEAssetSerializer, Log, All);
@@ -58,13 +59,11 @@ bool FJsonUEAssetSerializer::ParseExportMap()
 			{
 				if (ObjectExp.Object != nullptr)
 				{
-					const UK2Node* Node = static_cast<UK2Node*>(ObjectExp.Object);
+					const UK2Node* Node = Cast<UK2Node>(ObjectExp.Object);
+					FString MemberName;
+					FK2GraphNodeObject::GetMemberNameByClassName(Node, MemberName);
 
-					if (Node)
-					{
-						FString MemberName = Node->GetNodeTitle(ENodeTitleType::FullTitle).ToString();
-						K2GraphNodeObjects.Add(FK2GraphNodeObject(Index, Kind, MemberName));
-					}
+					K2GraphNodeObjects.Add(FK2GraphNodeObject(Index, Kind, MemberName));
 				}
 			}
 			else

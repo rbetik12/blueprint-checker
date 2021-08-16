@@ -23,6 +23,7 @@ public class BlueprintChecker : ModuleRules {
 			"Runtime/Launch/Private",
 			"Runtime/CoreUObject/Private",
 			"Runtime/Core/Private",
+			"Editor/BlueprintGraph/Classes",
 			Path.Combine(ModuleDirectory, "Private/ThirdParty")
 		});
 
@@ -56,7 +57,8 @@ public class BlueprintChecker : ModuleRules {
 			"Launch",
 			"GoogleTest",
 			"Json",
-			"JsonUtilities"
+			"JsonUtilities",
+			"BlueprintGraph"
 		});
 	}
 }
