@@ -16,6 +16,7 @@ protected:
 		PluginAssetPath = FPaths::EnginePluginsDir() + "Compositing/Composure/Content/Materials/ChromaticAberration/ComposureChromaticAberrationSwizzling.uasset";
 		IncorrectPluginAssetPathWithoutExtension = FPaths::EnginePluginsDir() + "Compositing/Composure/Content/Materials/ChromaticAberration/ComposureChromaticAberrationSwizzling";
 		IncorrectPluginAssetPath = FPaths::EnginePluginsDir() + "Compositing/Composure/Materials/ChromaticAberration/ComposureChromaticAberrationSwizzling.uasset";
+		ShaderModuleDependedAssetPath = FPaths::EngineContentDir() + "VREditor/VREditorAssetContainerData.uasset";
 	}
 
 	static void TearDownTestSuite()
@@ -28,6 +29,7 @@ protected:
 	static FString PluginAssetPath;
 	static FString IncorrectPluginAssetPath;
 	static FString IncorrectPluginAssetPathWithoutExtension;
+	static FString ShaderModuleDependedAssetPath;
 };
 
 TEST_F(FTests, CopyFileTest)
@@ -92,10 +94,16 @@ TEST_F(FTests, LoadSameUAssetTwice)
 	EXPECT_TRUE(FPlatformAgnosticChecker::Check(*EngineAssetPath));
 }
 
+TEST_F(FTests, TestShaderModuleDependedUAssetLoading)
+{
+	EXPECT_TRUE(FPlatformAgnosticChecker::Check(*ShaderModuleDependedAssetPath));
+}
+
 FString FTests::EngineAssetPath;
 FString FTests::GameAssetPath;
 FString FTests::PluginAssetPath;
 FString FTests::IncorrectPluginAssetPath;
 FString FTests::IncorrectPluginAssetPathWithoutExtension;
+FString FTests::ShaderModuleDependedAssetPath;
 
 #endif

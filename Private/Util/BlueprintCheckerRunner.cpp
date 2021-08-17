@@ -84,7 +84,10 @@ bool RunStdInMode()
 		
 	while (IsRunning)
 	{
+		UE_LOG(LogBlueprintCheckerRunner, Display, TEXT("Waiting for new input!"));
 		std::cin >> BlueprintPath;
+		FString BlueprintPathUEString(BlueprintPath.c_str());
+		UE_LOG(LogBlueprintCheckerRunner, Display, TEXT("Received new input. File: %s"), *BlueprintPathUEString);
 		if (BlueprintPath == "Exit")
 		{
 			IsRunning = false;

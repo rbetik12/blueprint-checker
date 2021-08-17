@@ -2,6 +2,8 @@
 #include "RequiredProgramMainCPPInclude.h"
 #include "Serialization/IUEAseetSerializer.h"
 
+#include <iostream>
+
 #define ERROR_ std::cout << "Error: " << __FILE__ << " " << __LINE__ << std::endl; \
 			exit(EXIT_FAILURE);
 
@@ -23,7 +25,7 @@ void FEngineWorker::PreStartupScreen()
 	GEngineLoop.PreInitPreStartupScreen(TEXT(""));
 #else
 	// Console flags that tells prevent initialization of rendering system
-	const TCHAR* CmdLine = TEXT("-nullrhi -NoShaderCompile");
+	const TCHAR* CmdLine = TEXT("-nullrhi");
 	
 	if (GLog != nullptr)
 	{
