@@ -20,9 +20,9 @@ bool FJsonUEAssetSerializer::Serialize()
 		UE_LOG(LogFJsonUEAssetSerializer, Error, TEXT("Failed to parse export map: %s"), *Filename);
 		return false;
 	}
-	
+
 	const bool JsonResult = FJsonObjectConverter::UStructToJsonObjectString(AssetData, JSONPayload, 0, 0);
-	
+
 	if (!JsonResult)
 	{
 		UE_LOG(LogFJsonUEAssetSerializer, Error, TEXT("Failed to serialize JSON: %s"), *Filename);
@@ -30,7 +30,7 @@ bool FJsonUEAssetSerializer::Serialize()
 	}
 
 	UE_LOG(LogFJsonUEAssetSerializer, Display, TEXT("Successfully serialized JSON: %s"), *Filename);
-	
+
 	return Save();
 }
 
@@ -58,14 +58,17 @@ bool FJsonUEAssetSerializer::ParseExportMap()
 			const EKind Kind = FK2GraphNodeObject::GetKindByClassName(ObjectExportSerialized.ClassName);
 			if (Kind != EKind::Other)
 			{
-				if (ObjectExp.Object != nullptr)
+				if (ObjectExp.Object == nullptr)
 				{
-					const UK2Node* Node = Cast<UK2Node>(ObjectExp.Object);
-					FString MemberName;
-					FK2GraphNodeObject::GetMemberNameByClassName(Node, MemberName);
-
-					K2GraphNodeObjects.Add(FK2GraphNodeObject(Index, Kind, MemberName));
+					K2GraphNodeObjects.Add(FK2GraphNodeObject(Index, Kind, ""));
+					continue;
 				}
+
+				const UK2Node* Node = Cast<UK2Node>(ObjectExp.Object);
+				FString MemberName;
+				FK2GraphNodeObject::GetMemberNameByClassName(Node, MemberName);
+
+				K2GraphNodeObjects.Add(FK2GraphNodeObject(Index, Kind, MemberName));
 			}
 			else
 			{
@@ -77,6 +80,7 @@ bool FJsonUEAssetSerializer::ParseExportMap()
 	AssetData.BlueprintClasses = BlueprintClassObjects;
 	AssetData.OtherClasses = OtherAssetObjects;
 	AssetData.K2VariableSets = K2GraphNodeObjects;
+	
 	return true;
 }
 
@@ -86,6 +90,6 @@ bool FJsonUEAssetSerializer::Save()
 	std::wcout << "End" << std::endl;
 
 	UE_LOG(LogFJsonUEAssetSerializer, Display, TEXT("Successfully written to stdout: %s"), *Filename);
-	
+
 	return true;
 }

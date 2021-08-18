@@ -82,14 +82,6 @@ bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 
 bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPath, const FString& BlueprintFilename)
 {
-	UObject* Obj = LoadObject<UObject>(nullptr, *BlueprintInternalPath);
-
-	// We tried to load object to fill linker export map with objects instances, but we failed, so we still load linker
-	if (!Obj)
-	{
-		UE_LOG(LogPlatformAgnosticChecker, Warning, TEXT("Can't load object %s"), *BlueprintInternalPath);
-	}
-	
 	FLinkerLoad* Linker = LoadPackageLinker(nullptr, *BlueprintInternalPath);
 	
 	if (!Linker)

@@ -9,6 +9,8 @@
 
 void FEngineWorker::Init()
 {
+	// GEngineLoop.PreInitPreStartupScreen(TEXT("-nullrhi"));
+	// GEngineLoop.PreInitPostStartupScreen(TEXT("-nullrhi"));
 	PreStartupScreen();
 	PostStartupScreen();
 	std::wcout << *IUEAssetSerializer::Directory << std::endl;
