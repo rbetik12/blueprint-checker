@@ -6,6 +6,7 @@
 
 FEngineLoop GEngineLoop;
 bool GIsConsoleExecutable = true;
+bool GIsTestMode = false;
 EasyArgs* EzArgs = nullptr;
 std::string Mode;
 std::string PathToFile;
@@ -59,6 +60,7 @@ void InitializeEasyArgs(int Argc, char* Argv[])
 
 	if (EzArgs->IsSet("-t") || EzArgs->IsSet("--test"))
 	{
+		GIsTestMode = true;
 		FPlatformAgnosticChecker::InitializeTestEnvironment(Argc, Argv);
 		FPlatformAgnosticChecker::Exit();
 		exit(EXIT_SUCCESS);

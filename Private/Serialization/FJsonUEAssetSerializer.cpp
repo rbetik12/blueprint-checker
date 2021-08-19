@@ -86,10 +86,13 @@ bool FJsonUEAssetSerializer::ParseExportMap()
 
 bool FJsonUEAssetSerializer::Save()
 {
-	std::wcout << *JSONPayload << std::endl;
-	std::wcout << "End" << std::endl;
+	if (!GIsTestMode)
+	{
+		std::wcout << *JSONPayload << std::endl;
+		std::wcout << "End" << std::endl;
 
-	UE_LOG(LogFJsonUEAssetSerializer, Display, TEXT("Successfully written to stdout: %s"), *Filename);
+		UE_LOG(LogFJsonUEAssetSerializer, Display, TEXT("Successfully written to stdout: %s"), *Filename);
+	}
 
 	return true;
 }

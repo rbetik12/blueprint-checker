@@ -1,5 +1,7 @@
 ﻿#include "FBinaryUEAssetSerializer.h"
 
+DECLARE_LOG_CATEGORY_CLASS(LogFBinaryUEAssetSerializer, Log, All);
+
 bool FBinaryUEAssetSerializer::Serialize()
 {
 	const bool ParseResult = ParseExportMap();
@@ -9,31 +11,36 @@ bool FBinaryUEAssetSerializer::Serialize()
 
 bool FBinaryUEAssetSerializer::Save()
 {
-	WriteInt32(AssetData.BlueprintClasses.Num());
-	for (auto& Obj: AssetData.BlueprintClasses)
+	if (!GIsTestMode)
 	{
-		WriteInt32(Obj.Index);
-		WriteFString(Obj.ObjectName);
-		WriteFString(Obj.ClassName);
-		WriteFString(Obj.SuperClassName);
-	}
+		WriteInt32(AssetData.BlueprintClasses.Num());
+		for (auto& Obj: AssetData.BlueprintClasses)
+		{
+			WriteInt32(Obj.Index);
+			WriteFString(Obj.ObjectName);
+			WriteFString(Obj.ClassName);
+			WriteFString(Obj.SuperClassName);
+		}
 	
-	WriteInt32(AssetData.K2VariableSets.Num());
-	for (auto& Obj: AssetData.K2VariableSets)
-	{
-		WriteInt32(Obj.Index);
-		WriteInt32(static_cast<int32>(Obj.ObjectKind));
-		WriteFString(Obj.MemberName);
+		WriteInt32(AssetData.K2VariableSets.Num());
+		for (auto& Obj: AssetData.K2VariableSets)
+		{
+			WriteInt32(Obj.Index);
+			WriteInt32(static_cast<int32>(Obj.ObjectKind));
+			WriteFString(Obj.MemberName);
+		}
+
+		WriteInt32(AssetData.OtherClasses.Num());
+		for (auto& Obj: AssetData.OtherClasses)
+		{
+			WriteInt32(Obj.Index);
+			WriteFString(Obj.ClassName);
+		}
+	
+		FlushStream();
 	}
 
-	WriteInt32(AssetData.OtherClasses.Num());
-	for (auto& Obj: AssetData.OtherClasses)
-	{
-		WriteInt32(Obj.Index);
-		WriteFString(Obj.ClassName);
-	}
-	
-	FlushStream();
+	UE_LOG(LogFBinaryUEAssetSerializer, Display, TEXT("Successfully written binary data to stdout: %s"), *Filename);
 	return true;
 }
 

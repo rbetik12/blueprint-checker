@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include "IUEAseetSerializer.h"
 
+extern bool GIsTestMode;
+
 // Serializes uasset data to JSON and writes it to standard output
 class FJsonUEAssetSerializer : public IUEAssetSerializer
 {
