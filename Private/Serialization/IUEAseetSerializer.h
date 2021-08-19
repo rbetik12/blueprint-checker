@@ -3,6 +3,12 @@
 #include "Containers/UnrealString.h"
 #include "HAL/FileManager.h"
 
+enum class ESerializerType
+{
+	JSON,
+	Binary
+};
+
 // Abstract class that provides interface for serializing asset data
 class IUEAssetSerializer
 {
@@ -20,7 +26,7 @@ public:
 
 	static FString Directory;
 	
-	static IUEAssetSerializer* Create(FLinkerLoad* Linker, const FString& Filename);
+	static IUEAssetSerializer* Create(FLinkerLoad* Linker, const FString& Filename, ESerializerType Type = ESerializerType::Binary);
 
 protected:
 	virtual bool CreateSerializationDirectory()

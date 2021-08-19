@@ -101,8 +101,9 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 bool FPlatformAgnosticChecker::SerializeUAssetInfo(FLinkerLoad* UAssetLinker, const FString& BlueprintFilename)
 {
 	IUEAssetSerializer* Serializer = IUEAssetSerializer::Create(UAssetLinker, BlueprintFilename);
-
-	return Serializer->Serialize();
+	const bool Result = Serializer->Serialize();
+	delete Serializer;
+	return Result;
 }
 
 bool FPlatformAgnosticChecker::DeleteCopiedUAsset(const FString& BlueprintFilename)

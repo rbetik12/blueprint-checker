@@ -96,7 +96,8 @@ bool RunStdInMode()
 			
 		if(!ParseBlueprint(BlueprintPath))
 		{
-			std::wcout << "Error!" << std::endl;
+			char* ErrorStr = "error\n";
+			printf(ErrorStr);
 		}
 	}
 	FPlatformAgnosticChecker::Exit();
