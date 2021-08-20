@@ -18,6 +18,7 @@ protected:
 		IncorrectPluginAssetPath = FPaths::EnginePluginsDir() + "Compositing/Composure/Materials/ChromaticAberration/ComposureChromaticAberrationSwizzling.uasset";
 		ShaderModuleDependedAssetPath = FPaths::EngineContentDir() + "VREditor/VREditorAssetContainerData.uasset";
 		BlueprintThatCrashedAssetPath = FPaths::EnginePluginsDir() + "VirtualProduction/DMX/DMXFixtures/Content/Fireworks/Blueprints/BP_FireWorksShell.uasset";
+		UMapAssetPath = FPaths::EngineContentDir() + "Maps/Templates/TimeOfDay_Default.umap";
 	}
 
 	static void TearDownTestSuite()
@@ -32,6 +33,7 @@ protected:
 	static FString IncorrectPluginAssetPathWithoutExtension;
 	static FString ShaderModuleDependedAssetPath;
 	static FString BlueprintThatCrashedAssetPath;
+	static FString UMapAssetPath;
 };
 
 TEST_F(FTests, CopyFileTest)
@@ -59,6 +61,13 @@ TEST_F(FTests, TestGamePathConvertion)
 	const FString EngineFriendlyPath = FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(*GameAssetPath);
 
 	EXPECT_STREQ(TEXT("/Temp/BlueprintChecker/TaskAlwaysTrue"), *EngineFriendlyPath);
+}
+
+TEST_F(FTests, UMapPathConvertionTest)
+{
+	const FString EngineFriendlyPath = FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(*UMapAssetPath);
+
+	EXPECT_STREQ(TEXT("/Engine/Maps/Templates/TimeOfDay_Default"), *EngineFriendlyPath);
 }
 
 TEST_F(FTests, TestEnginePathConvertion)
@@ -101,11 +110,6 @@ TEST_F(FTests, TestShaderModuleDependedUAssetLoading)
 	EXPECT_TRUE(FPlatformAgnosticChecker::Check(*ShaderModuleDependedAssetPath));
 }
 
-TEST_F(FTests, TestUAssetThatTotallyCrashedChecker)
-{
-	EXPECT_TRUE(FPlatformAgnosticChecker::Check(*BlueprintThatCrashedAssetPath));
-}
-
 FString FTests::EngineAssetPath;
 FString FTests::GameAssetPath;
 FString FTests::PluginAssetPath;
@@ -113,5 +117,6 @@ FString FTests::IncorrectPluginAssetPath;
 FString FTests::IncorrectPluginAssetPathWithoutExtension;
 FString FTests::ShaderModuleDependedAssetPath;
 FString FTests::BlueprintThatCrashedAssetPath;
+FString FTests::UMapAssetPath;
 
 #endif

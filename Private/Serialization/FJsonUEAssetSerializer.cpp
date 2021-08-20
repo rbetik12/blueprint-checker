@@ -42,6 +42,7 @@ bool FJsonUEAssetSerializer::ParseExportMap()
 	TArray<FOtherAssetObject> OtherAssetObjects;
 	FUEAssetReader Reader(Linker);
 
+	Linker->LoadAllObjects(true);
 	for (int Index = 0; Index < Linker->ExportMap.Num(); Index++)
 	{
 		auto& ObjectExp = Linker->ExportMap[Index];
@@ -58,17 +59,14 @@ bool FJsonUEAssetSerializer::ParseExportMap()
 			const EKind Kind = FK2GraphNodeObject::GetKindByClassName(ObjectExportSerialized.ClassName);
 			if (Kind != EKind::Other)
 			{
-				if (ObjectExp.Object == nullptr)
+				if (ObjectExp.Object)
 				{
-					K2GraphNodeObjects.Add(FK2GraphNodeObject(Index, Kind, ""));
-					continue;
+					const UK2Node* Node = Cast<UK2Node>(ObjectExp.Object);
+					FString MemberName;
+					FK2GraphNodeObject::GetMemberNameByClassName(Node, MemberName);
+
+					K2GraphNodeObjects.Add(FK2GraphNodeObject(Index, Kind, MemberName));
 				}
-
-				const UK2Node* Node = Cast<UK2Node>(ObjectExp.Object);
-				FString MemberName;
-				FK2GraphNodeObject::GetMemberNameByClassName(Node, MemberName);
-
-				K2GraphNodeObjects.Add(FK2GraphNodeObject(Index, Kind, MemberName));
 			}
 			else
 			{

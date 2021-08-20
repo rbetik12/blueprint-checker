@@ -33,7 +33,7 @@ bool FPlatformAgnosticChecker::Check(const TCHAR* BlueprintPath)
 		UE_LOG(LogPlatformAgnosticChecker, Error, TEXT("Failed to delete file: %s"), *BlueprintFilename);
 	}
 	
-	return ParseResult && DeleteResult;
+	return ParseResult;
 }
 
 void FPlatformAgnosticChecker::Exit()
@@ -80,9 +80,23 @@ bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 	return true;
 }
 
+
 bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPath, const FString& BlueprintFilename)
 {
-	FLinkerLoad* Linker = LoadPackageLinker(nullptr, *BlueprintInternalPath);
+	FLinkerLoad* Linker = nullptr;
+	TRefCountPtr<FUObjectSerializeContext> LoadContext(FUObjectThreadContext::Get().GetSerializeContext());
+	BeginLoad(LoadContext);
+	{
+		FUObjectSerializeContext* InOutLoadContext = LoadContext;
+		Linker = GetPackageLinker(nullptr, *BlueprintInternalPath, 0x0, nullptr, nullptr, nullptr, &InOutLoadContext);
+		if (InOutLoadContext != LoadContext)
+		{
+			// The linker already existed and was associated with another context
+			LoadContext->DecrementBeginLoadCount();
+			LoadContext = InOutLoadContext;
+			LoadContext->IncrementBeginLoadCount();
+		}
+	}
 	
 	if (!Linker)
 	{
@@ -93,8 +107,10 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 
 	UE_LOG(LogPlatformAgnosticChecker, Display, TEXT("Successfully got package linker. Package: %s"), *BlueprintInternalPath);
 	const bool Result = SerializeUAssetInfo(Linker, BlueprintFilename);
+	EndLoad(Linker->GetSerializeContext());
 	Linker = nullptr;
 	TryCollectGarbage(RF_NoFlags, true);
+	
 	return Result;
 }
 
@@ -118,8 +134,8 @@ FString FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(const TCHAR* Bluep
 	// User can provide path with backslashes, so here we guarantee that it will be converted to normal path
 	FString FullPath = FString(BlueprintPath).Replace(TEXT("\\"), TEXT("/"));
 
-	//Checks whether this path contains content directory and *.uasset in it
-	if (FullPath.Find("/Content/") == INDEX_NONE || FullPath.Find(".uasset") == INDEX_NONE)
+	//Checks whether this path contains content directory and uasset or umap in it
+	if (FullPath.Find("/Content/") == INDEX_NONE || (FullPath.Find(".uasset") == INDEX_NONE && FullPath.Find(".umap") == INDEX_NONE))
 	{
 		return FString();
 	}
