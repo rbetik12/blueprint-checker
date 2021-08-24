@@ -42,7 +42,7 @@ bool FJsonUEAssetSerializer::ParseExportMap()
 	TArray<FOtherAssetObject> OtherAssetObjects;
 	FUEAssetReader Reader(Linker);
 
-	Linker->LoadAllObjects(true);
+	Linker->LoadAllObjects(false);
 	for (int Index = 0; Index < Linker->ExportMap.Num(); Index++)
 	{
 		auto& ObjectExp = Linker->ExportMap[Index];

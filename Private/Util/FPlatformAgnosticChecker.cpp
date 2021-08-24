@@ -80,10 +80,9 @@ bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 	return true;
 }
 
-
 bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPath, const FString& BlueprintFilename)
 {
-	FLinkerLoad* Linker = nullptr;
+	FLinkerLoad* Linker;
 	TRefCountPtr<FUObjectSerializeContext> LoadContext(FUObjectThreadContext::Get().GetSerializeContext());
 	BeginLoad(LoadContext);
 	{
@@ -100,7 +99,7 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 	
 	if (!Linker)
 	{
-		TryCollectGarbage(RF_NoFlags, false);
+		TryCollectGarbage(RF_NoFlags, true);
 		UE_LOG(LogPlatformAgnosticChecker, Error, TEXT("Can't get package linker. Package: %s"), *BlueprintInternalPath);
 		return false;
 	}
@@ -108,8 +107,6 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 	UE_LOG(LogPlatformAgnosticChecker, Display, TEXT("Successfully got package linker. Package: %s"), *BlueprintInternalPath);
 	const bool Result = SerializeUAssetInfo(Linker, BlueprintFilename);
 	EndLoad(Linker->GetSerializeContext());
-	Linker = nullptr;
-	TryCollectGarbage(RF_NoFlags, true);
 	
 	return Result;
 }

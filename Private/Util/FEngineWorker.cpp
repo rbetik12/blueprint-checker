@@ -9,11 +9,13 @@
 
 void FEngineWorker::Init()
 {
-	// GEngineLoop.PreInitPreStartupScreen(TEXT("-nullrhi"));
-	// GEngineLoop.PreInitPostStartupScreen(TEXT("-nullrhi"));
-	PreStartupScreen();
-	PostStartupScreen();
-	// std::wcout << *IUEAssetSerializer::Directory << std::endl;
+	//TODO use engine initialization routines, nut remove splash screen creating
+	GEngineLoop.PreInitPreStartupScreen(TEXT("-nullrhi -EnableAllPlugins"));
+	GEngineLoop.PreInitPostStartupScreen(TEXT("-nullrhi -EnableAllPlugins"));
+	InitializeEnvironment();
+	// PreStartupScreen();
+	// PostStartupScreen();
+	
 	char* StartStr = "start\n";
 	printf(StartStr);
 }
@@ -29,7 +31,8 @@ void FEngineWorker::PreStartupScreen()
 	GEngineLoop.PreInitPreStartupScreen(TEXT(""));
 #else
 	// Console flags that tells prevent initialization of rendering system
-	const TCHAR* CmdLine = TEXT("-nullrhi");
+	//-EnablePlugins=DMXProtocol,DMXEngine,DMXFixtures,VirtualCamera
+	const TCHAR* CmdLine = TEXT("-nullrhi -EnableAllPlugins");
 	
 	if (GLog != nullptr)
 	{
@@ -1389,58 +1392,7 @@ void FEngineWorker::PostStartupScreen()
 	}
 
 	// CommandletClass->GetDefaultObject<UCommandlet>()->CreateCustomEngine(CommandletCommandLine);
-	if ( GEngine == nullptr )
-	{
-#if WITH_EDITOR
-		if ( GIsEditor )
-		{
-			FString EditorEngineClassName;
-			GConfig->GetString(TEXT("/Script/Engine.Engine"), TEXT("EditorEngine"), EditorEngineClassName, GEngineIni);
-			UClass* EditorEngineClass = StaticLoadClass( UEditorEngine::StaticClass(), nullptr, *EditorEngineClassName);
-			if (EditorEngineClass == nullptr)
-			{
-				UE_LOG(LogInit, Fatal, TEXT("Failed to load Editor Engine class '%s'."), *EditorEngineClassName);
-			}
-
-			GEngine = GEditor = NewObject<UEditorEngine>(GetTransientPackage(), EditorEngineClass);
-
-			GEngine->ParseCommandline();
-
-			UE_LOG(LogInit, Log, TEXT("Initializing Editor Engine..."));
-			GEditor->InitEditor(&GEngineLoop);
-			UE_LOG(LogInit, Log, TEXT("Initializing Editor Engine Completed"));
-		}
-		else
-#endif
-		{
-			FString GameEngineClassName;
-			GConfig->GetString(TEXT("/Script/Engine.Engine"), TEXT("GameEngine"), GameEngineClassName, GEngineIni);
-
-			UClass* EngineClass = StaticLoadClass( UEngine::StaticClass(), nullptr, *GameEngineClassName);
-
-			if (EngineClass == nullptr)
-			{
-				UE_LOG(LogInit, Fatal, TEXT("Failed to load Engine class '%s'."), *GameEngineClassName);
-			}
-
-			// must do this here so that the engine object that we create on the next line receives the correct property values
-			GEngine = NewObject<UEngine>(GetTransientPackage(), EngineClass);
-			check(GEngine);
-
-			GEngine->ParseCommandline();
-
-			UE_LOG(LogInit, Log, TEXT("Initializing Game Engine..."));
-			GEngine->Init(&GEngineLoop);
-			UE_LOG(LogInit, Log, TEXT("Initializing Game Engine Completed"));
-		}
-	}
-	GEngine->Exec(nullptr, TEXT("log LogLinker off"));
-	GEngine->Exec(nullptr, TEXT("log LogTargetPlatformManager off"));
-	GEngine->Exec(nullptr, TEXT("log LogHAL off"));
-	GEngine->Exec(nullptr, TEXT("log LogAudioMixer off"));
-	GEngine->Exec(nullptr, TEXT("log LogWindowsTextInputMethodSystem off"));
-	GEngine->Exec(nullptr, TEXT("log LogBlueprint off"));
-	GEngine->Exec(nullptr, TEXT("log LogAudio off"));
+	
 }
 
 bool FEngineWorker::AppInit()
@@ -1543,7 +1495,10 @@ bool FEngineWorker::AppInit()
 	// Load "asap" plugin modules
 	IPluginManager&  PluginManager = IPluginManager::Get();
 	IProjectManager& ProjectManager = IProjectManager::Get();
-
+	if (!ProjectManager.LoadModulesForProject(ELoadingPhase::EarliestPossible) || !PluginManager.LoadModulesForEnabledPlugins(ELoadingPhase::EarliestPossible))
+	{
+		return false;
+	}
 	{
 		SCOPED_BOOT_TIMING("FPlatformStackWalk::Init");
 		// Now that configs have been initialized, setup stack walking options
@@ -1835,5 +1790,63 @@ bool FEngineWorker::AppInit()
 
 	FEmbeddedCommunication::ForceTick(19);
 
+	InitializeEnvironment();
+
 	return true;
+}
+
+void FEngineWorker::InitializeEnvironment()
+{
+	if ( GEngine == nullptr )
+	{
+#if WITH_EDITOR
+		if ( GIsEditor )
+		{
+			FString EditorEngineClassName;
+			GConfig->GetString(TEXT("/Script/Engine.Engine"), TEXT("EditorEngine"), EditorEngineClassName, GEngineIni);
+			UClass* EditorEngineClass = StaticLoadClass( UEditorEngine::StaticClass(), nullptr, *EditorEngineClassName);
+			if (EditorEngineClass == nullptr)
+			{
+				UE_LOG(LogInit, Fatal, TEXT("Failed to load Editor Engine class '%s'."), *EditorEngineClassName);
+			}
+
+			GEngine = GEditor = NewObject<UEditorEngine>(GetTransientPackage(), EditorEngineClass);
+
+			GEngine->ParseCommandline();
+
+			UE_LOG(LogInit, Log, TEXT("Initializing Editor Engine..."));
+			GEditor->InitEditor(&GEngineLoop);
+			UE_LOG(LogInit, Log, TEXT("Initializing Editor Engine Completed"));
+		}
+		else
+#endif
+		{
+			FString GameEngineClassName;
+			GConfig->GetString(TEXT("/Script/Engine.Engine"), TEXT("GameEngine"), GameEngineClassName, GEngineIni);
+
+			UClass* EngineClass = StaticLoadClass( UEngine::StaticClass(), nullptr, *GameEngineClassName);
+
+			if (EngineClass == nullptr)
+			{
+				UE_LOG(LogInit, Fatal, TEXT("Failed to load Engine class '%s'."), *GameEngineClassName);
+			}
+
+			// must do this here so that the engine object that we create on the next line receives the correct property values
+			GEngine = NewObject<UEngine>(GetTransientPackage(), EngineClass);
+			check(GEngine);
+
+			GEngine->ParseCommandline();
+
+			UE_LOG(LogInit, Log, TEXT("Initializing Game Engine..."));
+			GEngine->Init(&GEngineLoop);
+			UE_LOG(LogInit, Log, TEXT("Initializing Game Engine Completed"));
+		}
+	}
+	GEngine->Exec(nullptr, TEXT("log LogLinker off"));
+	GEngine->Exec(nullptr, TEXT("log LogTargetPlatformManager off"));
+	GEngine->Exec(nullptr, TEXT("log LogHAL off"));
+	GEngine->Exec(nullptr, TEXT("log LogAudioMixer off"));
+	GEngine->Exec(nullptr, TEXT("log LogWindowsTextInputMethodSystem off"));
+	GEngine->Exec(nullptr, TEXT("log LogBlueprint off"));
+	GEngine->Exec(nullptr, TEXT("log LogAudio off"));
 }
