@@ -9,8 +9,8 @@
 class FBinaryUEAssetSerializer : public FJsonUEAssetSerializer
 {
 public:
-	FBinaryUEAssetSerializer(FLinkerLoad* Linker, const FString& Filename, FILE* OutputStream = stdout):
-		FJsonUEAssetSerializer(Linker, Filename), OutputStream(OutputStream)
+	FBinaryUEAssetSerializer(FLinkerLoad* Linker, const FString& FilePath, FILE* OutputStream = stdout):
+		FJsonUEAssetSerializer(Linker, FilePath), OutputStream(OutputStream)
 	{
 		_setmode( _fileno( stdout ),  _O_BINARY );
 	}

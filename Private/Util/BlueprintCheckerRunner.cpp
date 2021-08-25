@@ -4,6 +4,8 @@
 #include <iostream>
 #include <fstream>
 
+#include "UObject/UObjectGlobals.h"
+
 DECLARE_LOG_CATEGORY_CLASS(LogBlueprintCheckerRunner, Log, All);
 
 bool ParseBlueprint(const std::string& BlueprintFilepathStr)
@@ -81,7 +83,7 @@ bool RunStdInMode()
 
 	std::string BlueprintPath;
 	bool IsRunning = true;
-		
+	
 	while (IsRunning)
 	{
 		UE_LOG(LogBlueprintCheckerRunner, Display, TEXT("Waiting for new input!"));

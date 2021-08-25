@@ -7,7 +7,7 @@ extern bool GIsTestMode;
 class FJsonUEAssetSerializer : public IUEAssetSerializer
 {
 public:
-	FJsonUEAssetSerializer(FLinkerLoad* Linker, const FString& Filename): IUEAssetSerializer(Linker, Filename)
+	FJsonUEAssetSerializer(FLinkerLoad* Linker, const FString& FilePath): IUEAssetSerializer(Linker, FilePath)
 	{
 	}
 

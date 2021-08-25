@@ -7,12 +7,19 @@
 #include "K2Node.h"
 #include "Engine/Engine.h"
 #include "Serialization/IUEAseetSerializer.h"
+#include "UEAssets/FUEAssetCache.h"
 #include "UObject/LinkerLoad.h"
 
 DECLARE_LOG_CATEGORY_CLASS(LogPlatformAgnosticChecker, Log, All);
 
 bool FPlatformAgnosticChecker::Check(const TCHAR* BlueprintPath)
 {
+	FUE4AssetData* Data = FUEAssetCache::Get()->Get(BlueprintPath);
+	if (Data)
+	{
+		SerializeUAssetInfo(nullptr, BlueprintPath);
+		return true;
+	}
 	const FString EngineInternalPath = ConvertToEngineFriendlyPath(BlueprintPath);
 	if (EngineInternalPath.IsEmpty())
 	{
@@ -21,7 +28,7 @@ bool FPlatformAgnosticChecker::Check(const TCHAR* BlueprintPath)
 	}
 	
 	const FString BlueprintFilename = FPaths::GetBaseFilename(BlueprintPath);
-	const bool ParseResult = ParseBlueprint(EngineInternalPath, BlueprintFilename);
+	const bool ParseResult = ParseBlueprint(EngineInternalPath, BlueprintPath);
 	const bool DeleteResult = DeleteCopiedUAsset(BlueprintFilename);
 
 	if (DeleteResult)
@@ -80,7 +87,7 @@ bool FPlatformAgnosticChecker::CopyFileToContentDir(const TCHAR* BlueprintPath)
 	return true;
 }
 
-bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPath, const FString& BlueprintFilename)
+bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPath, const FString& BlueprintFilePath)
 {
 	FLinkerLoad* Linker;
 	TRefCountPtr<FUObjectSerializeContext> LoadContext(FUObjectThreadContext::Get().GetSerializeContext());
@@ -105,15 +112,15 @@ bool FPlatformAgnosticChecker::ParseBlueprint(const FString& BlueprintInternalPa
 	}
 
 	UE_LOG(LogPlatformAgnosticChecker, Display, TEXT("Successfully got package linker. Package: %s"), *BlueprintInternalPath);
-	const bool Result = SerializeUAssetInfo(Linker, BlueprintFilename);
+	const bool Result = SerializeUAssetInfo(Linker, BlueprintFilePath);
 	EndLoad(Linker->GetSerializeContext());
 	
 	return Result;
 }
 
-bool FPlatformAgnosticChecker::SerializeUAssetInfo(FLinkerLoad* UAssetLinker, const FString& BlueprintFilename)
+bool FPlatformAgnosticChecker::SerializeUAssetInfo(FLinkerLoad* UAssetLinker, const FString& BlueprintFilePath)
 {
-	IUEAssetSerializer* Serializer = IUEAssetSerializer::Create(UAssetLinker, BlueprintFilename);
+	IUEAssetSerializer* Serializer = IUEAssetSerializer::Create(UAssetLinker, BlueprintFilePath);
 	const bool Result = Serializer->Serialize();
 	delete Serializer;
 	return Result;
@@ -143,7 +150,8 @@ FString FPlatformAgnosticChecker::ConvertToEngineFriendlyPath(const TCHAR* Bluep
 	// engine temp directory
 	if (FullPath.Find(TEXT("/Plugins/")) != INDEX_NONE || FullPath.Find(TEXT("/Engine/")) == INDEX_NONE)
 	{
-		if (CopyFileToContentDir(BlueprintPath))
+		// If we can't copy file, but its data is still relevant in cache we still return without error
+		if (CopyFileToContentDir(BlueprintPath) || FUEAssetCache::Get()->Get(BlueprintPath))
 		{
 			return FString("/Temp/BlueprintChecker/") + Filename;	
 		}

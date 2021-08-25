@@ -5,6 +5,8 @@
 #include "K2Node_CallFunction.h"
 #include <iostream>
 
+#include "UEAssets/FUEAssetCache.h"
+
 DECLARE_LOG_CATEGORY_CLASS(LogFJsonUEAssetSerializer, Log, All);
 
 bool FJsonUEAssetSerializer::Serialize()
@@ -13,11 +15,11 @@ bool FJsonUEAssetSerializer::Serialize()
 
 	if (ParseResult)
 	{
-		UE_LOG(LogFJsonUEAssetSerializer, Display, TEXT("Successfully parsed export map: %s"), *Filename);
+		UE_LOG(LogFJsonUEAssetSerializer, Display, TEXT("Successfully parsed export map: %s"), *FilePath);
 	}
 	else
 	{
-		UE_LOG(LogFJsonUEAssetSerializer, Error, TEXT("Failed to parse export map: %s"), *Filename);
+		UE_LOG(LogFJsonUEAssetSerializer, Error, TEXT("Failed to parse export map: %s"), *FilePath);
 		return false;
 	}
 
@@ -25,11 +27,11 @@ bool FJsonUEAssetSerializer::Serialize()
 
 	if (!JsonResult)
 	{
-		UE_LOG(LogFJsonUEAssetSerializer, Error, TEXT("Failed to serialize JSON: %s"), *Filename);
+		UE_LOG(LogFJsonUEAssetSerializer, Error, TEXT("Failed to serialize JSON: %s"), *FilePath);
 		return false;
 	}
 
-	UE_LOG(LogFJsonUEAssetSerializer, Display, TEXT("Successfully serialized JSON: %s"), *Filename);
+	UE_LOG(LogFJsonUEAssetSerializer, Display, TEXT("Successfully serialized JSON: %s"), *FilePath);
 
 	return Save();
 }
@@ -37,6 +39,13 @@ bool FJsonUEAssetSerializer::Serialize()
 // TODO Write tests for this
 bool FJsonUEAssetSerializer::ParseExportMap()
 {
+	FUE4AssetData* AssetDataCache = FUEAssetCache::Get()->Get(FilePath);
+	if (AssetDataCache)
+	{
+		AssetData = *AssetDataCache;
+		return true;
+	}
+	
 	TArray<FBlueprintClassObject> BlueprintClassObjects;
 	TArray<FK2GraphNodeObject> K2GraphNodeObjects;
 	TArray<FOtherAssetObject> OtherAssetObjects;
@@ -78,6 +87,8 @@ bool FJsonUEAssetSerializer::ParseExportMap()
 	AssetData.BlueprintClasses = BlueprintClassObjects;
 	AssetData.OtherClasses = OtherAssetObjects;
 	AssetData.K2VariableSets = K2GraphNodeObjects;
+
+	FUEAssetCache::Get()->Add(FilePath, AssetData);
 	
 	return true;
 }
@@ -89,7 +100,7 @@ bool FJsonUEAssetSerializer::Save()
 		std::wcout << *JSONPayload << std::endl;
 		std::wcout << "End" << std::endl;
 
-		UE_LOG(LogFJsonUEAssetSerializer, Display, TEXT("Successfully written to stdout: %s"), *Filename);
+		UE_LOG(LogFJsonUEAssetSerializer, Display, TEXT("Successfully written to stdout: %s"), *FilePath);
 	}
 
 	return true;

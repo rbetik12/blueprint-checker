@@ -40,7 +40,7 @@ bool FBinaryUEAssetSerializer::Save()
 		FlushStream();
 	}
 
-	UE_LOG(LogFBinaryUEAssetSerializer, Display, TEXT("Successfully written binary data to stdout: %s"), *Filename);
+	UE_LOG(LogFBinaryUEAssetSerializer, Display, TEXT("Successfully written binary data to stdout: %s"), *FilePath);
 	return true;
 }
 

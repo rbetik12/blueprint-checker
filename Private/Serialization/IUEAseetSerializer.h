@@ -13,7 +13,7 @@ enum class ESerializerType
 class IUEAssetSerializer
 {
 public:
-	IUEAssetSerializer(FLinkerLoad* Linker, const FString& Filename): Linker(Linker), Filename(Filename)
+	IUEAssetSerializer(FLinkerLoad* Linker, const FString& FilePath): Linker(Linker), FilePath(FilePath)
 	{
 		FileManager = &IFileManager::Get();
 	}
@@ -51,7 +51,7 @@ protected:
 
 	IFileManager* FileManager = nullptr;
 	FLinkerLoad* Linker = nullptr;
-	FString Filename;
+	FString FilePath;
 };
 
 // TODO cross-platform directory binding
